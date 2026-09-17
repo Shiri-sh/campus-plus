@@ -1,2 +1,2 @@
-# campus-plus
+# campus+
 The portal for JCT students
