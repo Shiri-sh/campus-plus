@@ -1,0 +1,53 @@
+<header class="app-header">
+  <div class="header-inner">
+    <a class="brand" href="{{ url_for('student_dashboard') }}">
+      <span class="brand-mark">+</span>
+      <span class="brand-name">Campus<span>+</span></span>
+    </a>
+
+    <form class="header-search" action="{{ url_for('student_dashboard') }}" method="get">
+      <label class="sr-only" for="smart-search">Smart search</label>
+      <div class="search-input-wrap">
+        <input
+          id="smart-search"
+          name="q"
+          type="search"
+          value="{{ search_query or '' }}"
+          placeholder="Search with natural language, e.g. differential equations exam 2023"
+          data-typeahead
+          autocomplete="off"
+        />
+        <button class="btn btn-primary" type="submit">Search</button>
+      </div>
+      <div class="typeahead" data-suggest-list></div>
+      <div class="filters">
+        {% for value, label in file_types %}
+          <a
+            class="chip {% if selected_file_type == value %}is-active{% endif %}"
+            href="{% if selected_file_type == value %}{{ url_for('student_dashboard', q=search_query) }}{% else %}{{ url_for('student_dashboard', q=search_query, file_type=value) }}{% endif %}"
+          >{{ label }}</a>
+        {% endfor %}
+      </div>
+    </form>
+
+    <a class="btn btn-cta" href="{{ url_for('upload') }}">Upload New Material</a>
+
+    <div class="profile-chip">
+      <div class="avatar">{{ current_user.initials }}</div>
+      <div class="profile-meta">
+        <strong>{{ current_user.role_label }}</strong>
+        <span>{{ current_user.email }}</span>
+        <a class="logout-link" href="{{ url_for('logout') }}">Log out</a>
+      </div>
+    </div>
+  </div>
+</header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-bar">
+      {% for category, message in messages %}
+        <p class="alert alert-{{ category }}">{{ message }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}

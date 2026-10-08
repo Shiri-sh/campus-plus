@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Campus+ | Student dashboard{% endblock %}
+{% block body %}
+{% include "partials/student_nav.html" %}
+
+<main class="page">
+  <nav class="breadcrumb" aria-label="Folder breadcrumb">
+    <a href="{{ url_for('student_dashboard') }}#explorer">Courses</a>
+    {% if selected_course %}
+      <span>/</span>
+      <a href="{{ url_for('student_dashboard', course=selected_course.id) }}#explorer">{{ selected_course.name }}</a>
+    {% endif %}
+    {% if selected_year %}
+      <span>/</span>
+      <a href="{{ url_for('student_dashboard', course=selected_course.id, year=selected_year) }}#explorer">{{ selected_year }}</a>
+    {% endif %}
+    {% if selected_type %}
+      <span>/</span>
+      {% for value, label in material_types %}
+        {% if selected_type == value %}
+          <span class="current">{{ label }}</span>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  </nav>
+
+  <section id="explorer">
+    <h1 class="section-title">Hierarchy & Category Explorer</h1>
+    <p class="explorer-help">
+      These folders are loaded from the database.
+      Click a course card to open it, then a year, then a material type.
+    </p>
+
+    {% if not selected_course %}
+      <h2 class="explorer-label">Courses</h2>
+      <div class="card-row">
+        {% for course in courses %}
+          <a class="nav-card {% if course.file_count %}has-files{% endif %}" href="{{ url_for('student_dashboard', course=course.id) }}#explorer">
+            <strong>{{ course.name }}</strong>
+            <span>{{ course.file_count }} file{% if course.file_count != 1 %}s{% endif %} in database</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% elif not selected_year %}
+      <h2 class="explorer-label">Academic years in {{ selected_course.name }}</h2>
+      <div class="card-row">
+        {% for year in years %}
+          <a class="nav-card" href="{{ url_for('student_dashboard', course=selected_course.id, year=year) }}#explorer">
+            <strong>{{ year }}</strong>
+            <span>Academic year</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <h2 class="explorer-label">Material types in {{ selected_course.name }} / {{ selected_year }}</h2>
+      <div class="card-row">
+        {% for value, label in material_types %}
+          <a
+            class="nav-card {% if selected_type == value %}is-selected{% endif %}"
+            href="{{ url_for('student_dashboard', course=selected_course.id, year=selected_year, type=value) }}#explorer"
+          >
+            <strong>{{ label }}</strong>
+            <span>Material type</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2 class="section-title">Results and files</h2>
+    {% if materials %}
+      <div class="file-grid">
+        {% for material in materials %}
+          <article class="file-card" data-material-id="{{ material.id }}">
+            <div class="file-top">
+              <div class="file-icon {{ material.icon_type }}">{{ material.icon_label }}</div>
+              <div>
+                <h3>{{ material.file_name }}</h3>
+                <p>{{ material.file_type_label }} · Uploaded {{ material.uploaded_at.strftime("%d %b %Y") }}</p>
+                {% if material.relevance is not none %}
+                  <span class="score">Relevance {{ material.relevance }}%</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="file-actions">
+              <button class="btn btn-primary" type="button" data-view-material="{{ material.id }}">View</button>
+              {% if material.has_stored_file %}
+                <a class="btn btn-ghost" href="{{ url_for('download_material', material_id=material.id) }}">Download</a>
+              {% else %}
+                <button class="btn btn-ghost" type="button" disabled>Download</button>
+              {% endif %}
+              <button class="btn btn-ghost" type="button" data-report-material="{{ material.id }}">Report</button>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <p>This folder has no approved files yet. Courses that currently have files:</p>
+        <ul>
+          {% for course in courses_with_files %}
+            <li>
+              <a href="{{ url_for('student_dashboard', course=course.id) }}#explorer">{{ course.name }}</a>
+              ({{ course.file_count }})
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  </section>
+</main>
+
+<div class="modal" id="item-modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 data-modal-name>Material</h2>
+      <button class="btn btn-ghost" type="button" data-close-modal>Close</button>
+    </div>
+    <div class="preview-frame" data-preview-frame>No file is stored for this record yet.</div>
+    <div class="meta-grid">
+      <div>
+        <span>Course name</span>
+        <strong data-modal-course>—</strong>
+      </div>
+      <div>
+        <span>Lecturer</span>
+        <strong data-modal-lecturer>—</strong>
+      </div>
+      <div>
+        <span>Academic year</span>
+        <strong data-modal-year>—</strong>
+      </div>
+      <div>
+        <span>Material type</span>
+        <strong data-modal-type>—</strong>
+      </div>
+    </div>
+    <div class="ai-summary">
+      <h3>Automated content summary</h3>
+      <p data-modal-summary>Not generated yet.</p>
+    </div>
+    <div class="modal-actions">
+      <a class="btn btn-primary hidden" data-modal-download href="#">Download</a>
+      <button class="btn btn-ghost" type="button" data-report-from-details>Report Content / Suggest Update</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="report-modal">
+  <div class="modal-card narrow">
+    <div class="modal-head">
+      <h2>Report Content / Suggest Update</h2>
+      <button class="btn btn-ghost" type="button" data-close-modal>Close</button>
+    </div>
+    <form class="form-stack" method="post" data-report-form>
+      <div class="field">
+        <label for="report-message">Message to the administrator</label>
+        <textarea id="report-message" name="message" rows="5" required placeholder="Describe defective, outdated, or missing material."></textarea>
+      </div>
+      <button class="btn btn-primary" type="submit">Send report</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Campus+ | Admin console{% endblock %}
+{% block body %}
+<header class="app-header">
+  <div class="header-inner">
+    <a class="brand" href="{{ url_for('admin') }}">
+      <span class="brand-mark">+</span>
+      <span class="brand-name">Campus<span>+</span></span>
+    </a>
+    <span class="admin-title">Admin Management Console</span>
+    <div class="profile-chip">
+      <div class="avatar">{{ current_user.initials }}</div>
+      <div class="profile-meta">
+        <strong>{{ current_user.role_label }}</strong>
+        <span>{{ current_user.email }}</span>
+        <a class="logout-link" href="{{ url_for('logout') }}">Log out</a>
+      </div>
+    </div>
+  </div>
+</header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-bar">
+      {% for category, message in messages %}
+        <p class="alert alert-{{ category }}">{{ message }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<main class="page" data-admin-tab="{{ active_tab }}">
+  <section class="kpi-row">
+    <article class="kpi-card">
+      <span>Materials awaiting review and approval</span>
+      <strong>{{ pending_count }}</strong>
+    </article>
+    <article class="kpi-card">
+      <span>Open reports and inquiries</span>
+      <strong>{{ open_report_count }}</strong>
+    </article>
+    <article class="kpi-card">
+      <span>Distribution of materials by active courses</span>
+      <strong>{{ active_course_count }}</strong>
+      <ul class="kpi-list">
+        {% for name, count in distribution %}
+          <li>{{ name }} · {{ count }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+  </section>
+
+  <div class="tabs">
+    <button class="tab {% if active_tab == 'approvals' %}is-active{% endif %}" type="button" data-tab-group="admin" data-tab-target="approvals">Pending Approvals</button>
+    <button class="tab {% if active_tab == 'reports' %}is-active{% endif %}" type="button" data-tab-group="admin" data-tab-target="reports">Reports & Feedback</button>
+    <button class="tab {% if active_tab == 'users' %}is-active{% endif %}" type="button" data-tab-group="admin" data-tab-target="users">User Directory</button>
+    <button class="tab {% if active_tab == 'materials' %}is-active{% endif %}" type="button" data-tab-group="admin" data-tab-target="materials">Materials</button>
+  </div>
+
+  <section class="panel {% if active_tab != 'approvals' %}hidden{% endif %}" data-tab-panel-group="admin" data-tab-panel="approvals">
+    {% if pending %}
+      <table>
+        <thead>
+          <tr>
+            <th>File name</th>
+            <th>Upload date</th>
+            <th>Estimated course</th>
+            <th>Confidence score</th>
+            <th>AI recommendation</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for material in pending %}
+            <tr>
+              <td>{{ material.file_name }}</td>
+              <td>{{ material.uploaded_at.strftime("%d %b %Y") }}</td>
+              <td>{{ material.course.name }}</td>
+              <td>{% if material.confidence is not none %}{{ material.confidence }}%{% else %}—{% endif %}</td>
+              <td>
+                <span class="rec {% if material.ai_recommendation == 'reject' %}rec-reject{% else %}rec-approve{% endif %}">
+                  {{ material.recommendation_label }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button class="btn btn-ghost" type="button" data-admin-preview="{{ material.id }}">Preview</button>
+                  <form action="{{ url_for('approve_material', material_id=material.id) }}" method="post">
+                    <button class="btn btn-success" type="submit">Approve</button>
+                  </form>
+                  <form action="{{ url_for('reject_material', material_id=material.id) }}" method="post">
+                    <button class="btn btn-danger" type="submit">Reject</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty-state">No materials are waiting for review.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel {% if active_tab != 'reports' %}hidden{% endif %}" data-tab-panel-group="admin" data-tab-panel="reports">
+    {% if reports %}
+      {% for report in reports %}
+        <article class="report-item">
+          <div>
+            <h3>{{ report.material.file_name }}</h3>
+            <p><strong>{{ report.reporter.email }}</strong> · {{ report.created_at.strftime("%d %b %Y %H:%M") }} · {{ report.status }}</p>
+            <p>{{ report.message }}</p>
+            {% if report.admin_reply %}
+              <p class="field-hint">Saved reply: {{ report.admin_reply }}</p>
+            {% endif %}
+            <form class="form-stack reply-form" action="{{ url_for('reply_report', report_id=report.id) }}" method="post">
+              <div class="field">
+                <label class="sr-only" for="reply-{{ report.id }}">Response to {{ report.reporter.email }}</label>
+                <textarea id="reply-{{ report.id }}" name="reply" rows="3" required placeholder="Write a direct update for this student."></textarea>
+              </div>
+              <button class="btn btn-primary" type="submit">Send update to user email</button>
+            </form>
+          </div>
+        </article>
+      {% endfor %}
+    {% else %}
+      <p class="empty-state">No student reports yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel {% if active_tab != 'users' %}hidden{% endif %}" data-tab-panel-group="admin" data-tab-panel="users">
+    {% for user in users %}
+      <article class="user-item">
+        <div>
+          <h3>{{ user.email }}{% if user.is_blocked %} · Blocked{% endif %}</h3>
+          <p>
+            {{ user.role_label }}
+            {% if user.last_login_at %}
+              · Last login {{ user.last_login_at.strftime("%d %b %Y %H:%M") }}
+            {% else %}
+              · No login recorded
+            {% endif %}
+          </p>
+        </div>
+        {% if user.id != current_user.id %}
+          <div class="table-actions">
+            <form action="{{ url_for('block_user', user_id=user.id) }}" method="post">
+              <button class="btn btn-ghost" type="submit">{{ "Unblock" if user.is_blocked else "Block" }}</button>
+            </form>
+            <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post">
+              <button class="btn btn-danger" type="submit">Delete</button>
+            </form>
+          </div>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="panel {% if active_tab != 'materials' %}hidden{% endif %}" data-tab-panel-group="admin" data-tab-panel="materials">
+    <form class="header-search materials-search" action="{{ url_for('admin') }}" method="get">
+      <input type="hidden" name="tab" value="materials" />
+      <div class="search-input-wrap">
+        <input type="search" name="q" value="{{ material_search }}" placeholder="Search approved or rejected materials" />
+        <button class="btn btn-primary" type="submit">Search</button>
+      </div>
+    </form>
+    {% if materials %}
+      {% for material in materials %}
+        <article class="report-item">
+          <div>
+            <h3>{{ material.file_name }}</h3>
+            <p>{{ material.course.name }} · {{ material.academic_year }} · {{ material.material_type_label }} · {{ material.status }}</p>
+            <form class="prediction-grid" action="{{ url_for('update_material', material_id=material.id) }}" method="post">
+              <div class="field">
+                <label for="name-{{ material.id }}">File name</label>
+                <input id="name-{{ material.id }}" name="file_name" value="{{ material.file_name }}" />
+              </div>
+              <div class="field">
+                <label for="course-{{ material.id }}">Course</label>
+                <select id="course-{{ material.id }}" name="course_id">
+                  {% for course in courses %}
+                    <option value="{{ course.id }}" {% if course.id == material.course_id %}selected{% endif %}>{{ course.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field">
+                <label for="year-{{ material.id }}">Academic year</label>
+                <select id="year-{{ material.id }}" name="academic_year">
+                  {% for year in years %}
+                    <option value="{{ year }}" {% if year == material.academic_year %}selected{% endif %}>{{ year }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field">
+                <label for="type-{{ material.id }}">Material type</label>
+                <select id="type-{{ material.id }}" name="material_type">
+                  {% for value, label in material_types %}
+                    <option value="{{ value }}" {% if value == material.material_type %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field">
+                <label for="lecturer-{{ material.id }}">Lecturer</label>
+                <input id="lecturer-{{ material.id }}" name="lecturer" value="{{ material.lecturer or '' }}" />
+              </div>
+              <div class="file-actions">
+                <button class="btn btn-primary" type="submit">Save classification</button>
+              </div>
+            </form>
+          </div>
+          <div class="table-actions">
+            <button class="btn btn-ghost" type="button" data-admin-preview="{{ material.id }}">Preview</button>
+            <form action="{{ url_for('delete_material', material_id=material.id) }}" method="post">
+              <button class="btn btn-danger" type="submit">Delete</button>
+            </form>
+          </div>
+        </article>
+      {% endfor %}
+    {% else %}
+      <p class="empty-state">No matching materials.</p>
+    {% endif %}
+  </section>
+</main>
+
+<div class="modal" id="admin-preview-modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 data-modal-name>Preview</h2>
+      <button class="btn btn-ghost" type="button" data-close-modal>Close</button>
+    </div>
+    <div class="preview-frame" data-preview-frame>No file is stored for this record yet.</div>
+    <a class="btn btn-primary hidden" data-modal-download href="#">Download</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Campus+ | Sign in{% endblock %}
+{% block body %}
+<main class="auth-page">
+  <section class="auth-card">
+    <div class="brand">
+      <span class="brand-mark">+</span>
+      <span class="brand-name">Campus<span>+</span></span>
+    </div>
+    <p class="auth-intro">Sign in with your institutional email to continue.</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab {% if active_tab != 'register' %}is-active{% endif %}" type="button" data-tab-group="auth" data-tab-target="login">Login</button>
+      <button class="auth-tab {% if active_tab == 'register' %}is-active{% endif %}" type="button" data-tab-group="auth" data-tab-target="register">Register</button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <p class="alert alert-{{ category }}">{{ message }}</p>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form class="form-stack {% if active_tab == 'register' %}hidden{% endif %}" action="{{ url_for('login') }}" method="post" data-tab-panel-group="auth" data-tab-panel="login">
+      <div class="field">
+        <label for="login-email">Institutional email</label>
+        <input id="login-email" name="email" type="email" required placeholder="name@jct.ac.il" value="{{ form_email }}" />
+      </div>
+      <div class="field">
+        <label for="login-password">Password</label>
+        <input id="login-password" name="password" type="password" required minlength="8" />
+        <span class="field-hint">Required. Minimum 8 characters.</span>
+      </div>
+      <button class="btn btn-primary btn-wide" type="submit">Sign in</button>
+    </form>
+
+    <form class="form-stack {% if active_tab != 'register' %}hidden{% endif %}" action="{{ url_for('register') }}" method="post" data-tab-panel-group="auth" data-tab-panel="register">
+      <div class="field">
+        <label for="register-email">Institutional email</label>
+        <input id="register-email" name="email" type="email" required placeholder="name@jct.ac.il" value="{{ form_email }}" />
+      </div>
+      <div class="field">
+        <label for="register-role">Role</label>
+        <select id="register-role" name="role" required>
+          <option value="">Select a role</option>
+          <option value="student">Student</option>
+          <option value="admin">Administrator</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="register-password">Password</label>
+        <input id="register-password" name="password" type="password" required minlength="8" />
+      </div>
+      <div class="field">
+        <label for="register-confirm">Confirm password</label>
+        <input id="register-confirm" name="confirm_password" type="password" required minlength="8" />
+        <span class="field-hint">Use your institutional email. Password must be at least 8 characters.</span>
+      </div>
+      <button class="btn btn-primary btn-wide" type="submit">Create account</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Campus+ | Upload new material{% endblock %}
+{% block body %}
+{% include "partials/student_nav.html" %}
+
+<main class="page">
+  <h1 class="section-title">Upload New Material</h1>
+
+  <section class="dropzone" data-dropzone>
+    <strong>Drag & drop files here</strong>
+    <p>PDF files, presentations, documents, or a video link.</p>
+    <input class="sr-only" id="upload-file" type="file" name="file" accept=".pdf,.ppt,.pptx,.doc,.docx" data-upload-file />
+    <label class="btn btn-primary" for="upload-file">Select files</label>
+    <div class="field video-link-field">
+      <label for="video-link">Video link</label>
+      <input id="video-link" type="url" name="video_link" placeholder="https://" data-video-link />
+    </div>
+    <button class="btn btn-ghost" type="button" data-classify-link>Classify video link</button>
+    <p class="field-hint" data-upload-name></p>
+  </section>
+
+  <section class="ai-preview hidden" data-ai-preview>
+    <header>
+      <div>
+        <h2 class="section-title">AI Auto-Classification Preview</h2>
+        <p class="field-hint" data-classify-status>Predictions appear after a file is selected.</p>
+      </div>
+      <div class="file-actions">
+        <span class="spinner hidden" data-classify-spinner aria-hidden="true"></span>
+        <span class="score hidden" data-confidence></span>
+      </div>
+    </header>
+
+    <form class="form-stack" action="{{ url_for('confirm_upload') }}" method="post" data-confirm-form>
+      <div class="prediction-grid">
+        <div class="field">
+          <label for="predicted-course">Course</label>
+          <select id="predicted-course" name="course_id" required>
+            {% for course in courses %}
+              <option value="{{ course.id }}">{{ course.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="predicted-year">Academic year</label>
+          <select id="predicted-year" name="academic_year" required>
+            {% for year in years %}
+              <option value="{{ year }}">{{ year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="predicted-type">Material type</label>
+          <select id="predicted-type" name="material_type" required>
+            {% for value, label in material_types %}
+              <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="predicted-confidence">Measured probability</label>
+          <input id="predicted-confidence" data-confidence-input value="" readonly />
+        </div>
+      </div>
+      <div class="file-actions">
+        <button class="btn btn-primary" type="submit">Confirm classification</button>
+      </div>
+    </form>
+  </section>
+
+  {% if uploaded %}
+    <p class="status-banner">
+      Pending Approval — {{ pending_course }} was saved and is unavailable to general users until an administrator approves it.
+    </p>
+  {% endif %}
+</main>
+{% endblock %}
