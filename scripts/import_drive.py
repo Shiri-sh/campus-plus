@@ -38,8 +38,9 @@ from flask import Flask
 from courses import COURSE_MAP, SKIP_TOP_FOLDERS, TYPE_KEYWORDS
 from db_config import resolve_database_url
 from extensions import db
-from models import STATUS_APPROVED, Course, Material
+from models import HEBREW_TO_GREGORIAN, STATUS_APPROVED, Course, Material
 from schema import ensure_schema
+from seed import seed_catalog
 
 INDEX = ROOT / "instance" / "drive_index.json"
 STUDY_EXTENSIONS = {".pdf", ".ppt", ".pptx", ".doc", ".docx", ".zip", ".rar", ".7z", ".mp4", ".mov", ".mkv"}
@@ -64,6 +65,8 @@ SKIP_EXTENSIONS = {
 }
 
 DEFAULT_REMOTE_LIMIT = 2000
+
+_HEBREW_YEAR_RE = re.compile(r"(תשפ[א-ו]|תשע[ז-ט]|תשפ(?=[^א-ת]))")
 
 
 def parse_args():
@@ -146,11 +149,23 @@ def infer_type(parts):
 
 
 def infer_year(parts):
+    """Infer the academic year from folder path components.
+
+    Tries Gregorian (20XX) first, then Hebrew academic years
+    (e.g. תשפ"ד → 2024). Returns 0 for unknown.
+    """
     blob = " ".join(parts)
-    years = [int(year) for year in re.findall(r"\b(20\d{2})\b", blob)]
-    if years:
-        return years[-1]
-    return 2021
+
+    gregorian = [int(y) for y in re.findall(r"\b(20\d{2})\b", blob)]
+    if gregorian:
+        return gregorian[-1]
+
+    cleaned = blob.replace('"', "").replace("׳", "").replace("'", "").replace("״", "")
+    for match in _HEBREW_YEAR_RE.findall(cleaned):
+        if match in HEBREW_TO_GREGORIAN:
+            return HEBREW_TO_GREGORIAN[match]
+
+    return 0
 
 
 def infer_icon(name):
@@ -171,13 +186,8 @@ def drive_url(item):
 
 
 def seed_courses():
-    """Ensure every mapped course exists in the database."""
-    existing = {course.name for course in Course.query.all()}
-    for name in COURSE_MAP.values():
-        if name not in existing:
-            db.session.add(Course(name=name))
-            existing.add(name)
-    db.session.commit()
+    """Migrate English→Hebrew course names and ensure all courses exist."""
+    seed_catalog()
 
 
 def remove_old_drive_rows():
@@ -239,14 +249,16 @@ def import_materials(files, limit):
 
         course_id = course_cache[COURSE_MAP[top]]
         material_type, file_type = infer_type(item["path"])
+        year = infer_year(item["path"])
+        # Year 0 means the folder had no year. uploaded_at is the import day.
         material = Material(
             file_name=item["name"][:255],
             course_id=course_id,
-            academic_year=infer_year(item["path"]),
+            academic_year=year,
             material_type=material_type,
             file_type=file_type,
             icon_type=infer_icon(item["name"]),
-            uploaded_at=date(infer_year(item["path"]), 1, 1),
+            uploaded_at=date(year, 1, 1) if year else date.today(),
             status=STATUS_APPROVED,
             file_path=url,
             # ai_summary, confidence, ai_recommendation left as NULL:
