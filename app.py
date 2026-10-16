@@ -3,7 +3,7 @@ import uuid
 from datetime import date, datetime
 from functools import wraps
 from pathlib import Path
-from urllib.parse import quote_plus, urlparse
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
@@ -26,6 +26,7 @@ from werkzeug.utils import secure_filename
 
 from catalog import approved_materials, explorer_options, suggestion_items
 from classify import ICON_BY_EXTENSION, MATERIAL_TO_FILE_TYPE, classify_source
+from db_config import resolve_database_url
 from extensions import db, login_manager
 from models import (
     ADMIN,
@@ -49,26 +50,10 @@ app = Flask(__name__, instance_relative_config=True)
 os.makedirs(app.instance_path, exist_ok=True)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "campus-plus-dev-key")
 
-# ---------------------------------------------------------------------------
-# Database: prefer DATABASE_URL → construct from DB_* vars → SQLite fallback
-# ---------------------------------------------------------------------------
-_database_url = os.environ.get("DATABASE_URL")
-
-if not _database_url:
-    _db_server = os.environ.get("DB_SERVER")
-    _db_name = os.environ.get("DB_NAME")
-    _db_user = os.environ.get("DB_USER")
-    _db_password = os.environ.get("DB_PASSWORD")
-    if all([_db_server, _db_name, _db_user, _db_password]):
-        _database_url = (
-            f"mssql+pymssql://{quote_plus(_db_user)}:{quote_plus(_db_password)}"
-            f"@{_db_server}/{_db_name}"
-        )
-
-if not _database_url:
-    _database_url = "sqlite:///" + os.path.join(app.instance_path, "campus_plus.db")
-
-app.config["SQLALCHEMY_DATABASE_URI"] = _database_url
+# DATABASE_URL, or all of DB_*, or local SQLite. A partial DB_* set raises.
+app.config["SQLALCHEMY_DATABASE_URI"] = resolve_database_url(
+    os.environ, app.instance_path
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 app.config["UPLOAD_FOLDER"] = os.path.join(app.instance_path, "uploads")
