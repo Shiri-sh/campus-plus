@@ -110,7 +110,7 @@ def register_admin_routes(app, role_required, material_payload):
         material = admin_material(material_id)
         material.status = STATUS_APPROVED
         db.session.commit()
-        flash(f"Approved {material.file_name}.", "success")
+        flash(f"אושר: {material.file_name}.", "success")
         return admin_redirect("approvals")
 
     @app.route("/admin/materials/<int:material_id>/reject", methods=["POST"])
@@ -119,7 +119,7 @@ def register_admin_routes(app, role_required, material_payload):
         material = admin_material(material_id)
         material.status = STATUS_REJECTED
         db.session.commit()
-        flash(f"Rejected {material.file_name}.", "success")
+        flash(f"נדחה: {material.file_name}.", "success")
         return admin_redirect("approvals")
 
     @app.route("/admin/materials/<int:material_id>/update", methods=["POST"])
@@ -130,11 +130,11 @@ def register_admin_routes(app, role_required, material_payload):
             course_id = int(request.form.get("course_id"))
             academic_year = int(request.form.get("academic_year"))
         except (TypeError, ValueError):
-            flash("Choose a valid course and year.", "error")
+            flash("יש לבחור קורס ושנה תקפים.", "error")
             return admin_redirect("materials")
         material_type = request.form.get("material_type")
         if material_type not in dict(MATERIAL_TYPES):
-            flash("Choose a valid material type.", "error")
+            flash("יש לבחור סוג חומר תקף.", "error")
             return admin_redirect("materials")
         material.file_name = (request.form.get("file_name") or material.file_name).strip()
         material.course_id = course_id
@@ -143,7 +143,7 @@ def register_admin_routes(app, role_required, material_payload):
         material.file_type = MATERIAL_TO_FILE_TYPE[material_type]
         material.lecturer = (request.form.get("lecturer") or "").strip() or None
         db.session.commit()
-        flash(f"Updated {material.file_name}.", "success")
+        flash(f"עודכן: {material.file_name}.", "success")
         return admin_redirect("materials")
 
     @app.route("/admin/materials/<int:material_id>/delete", methods=["POST"])
@@ -153,7 +153,7 @@ def register_admin_routes(app, role_required, material_payload):
         Report.query.filter_by(material_id=material.id).delete()
         db.session.delete(material)
         db.session.commit()
-        flash("Material deleted.", "success")
+        flash("החומר נמחק.", "success")
         return admin_redirect("materials")
 
     @app.route("/admin/reports/<int:report_id>/reply", methods=["POST"])
@@ -164,14 +164,14 @@ def register_admin_routes(app, role_required, material_payload):
             abort(404)
         reply = (request.form.get("reply") or "").strip()
         if not reply:
-            flash("Write a response before sending.", "error")
+            flash("יש לכתוב תגובה לפני שליחה.", "error")
             return admin_redirect("reports")
         report.admin_reply = reply
         report.replied_at = datetime.utcnow()
         report.status = "answered"
         db.session.commit()
         flash(
-            f"Reply saved for {report.reporter.email}. Gmail MCP is not connected yet, so no email was sent.",
+            f"התגובה נשמרה עבור {report.reporter.email}. Gmail MCP עדיין לא מחובר — לא נשלח דוא״ל.",
             "success",
         )
         return admin_redirect("reports")
@@ -181,12 +181,12 @@ def register_admin_routes(app, role_required, material_payload):
     def block_user(user_id):
         user = db.session.get(User, user_id)
         if user is None or user.id == current_user.id:
-            flash("You cannot block this account.", "error")
+            flash("לא ניתן לחסום חשבון זה.", "error")
             return admin_redirect("users")
         user.is_blocked = not user.is_blocked
         db.session.commit()
         flash(
-            f"{'Blocked' if user.is_blocked else 'Unblocked'} {user.email}.",
+            f"{'נחסם' if user.is_blocked else 'בוטלה חסימת'} {user.email}.",
             "success",
         )
         return admin_redirect("users")
@@ -196,14 +196,14 @@ def register_admin_routes(app, role_required, material_payload):
     def delete_user(user_id):
         user = db.session.get(User, user_id)
         if user is None or user.id == current_user.id:
-            flash("You cannot delete this account.", "error")
+            flash("לא ניתן למחוק חשבון זה.", "error")
             return admin_redirect("users")
         if user.role == ADMIN and User.query.filter_by(role=ADMIN).count() <= 1:
-            flash("The last administrator cannot be deleted.", "error")
+            flash("לא ניתן למחוק את המנהל/ת האחרון/ה.", "error")
             return admin_redirect("users")
         Report.query.filter_by(reporter_id=user.id).delete()
         Material.query.filter_by(uploader_id=user.id).update({"uploader_id": None})
         db.session.delete(user)
         db.session.commit()
-        flash("User deleted.", "success")
+        flash("המשתמש/ת נמחק/ה.", "success")
         return admin_redirect("users")

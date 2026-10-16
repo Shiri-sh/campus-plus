@@ -29,7 +29,7 @@ ICON_BY_EXTENSION = {
 
 
 def tokenize(text):
-    return [token for token in re.findall(r"[a-z0-9]+", (text or "").lower()) if len(token) > 2]
+    return [token for token in re.findall(r"[a-z0-9\u0590-\u05FF]+", (text or "").lower()) if len(token) > 2]
 
 
 def predict_material_type(text):

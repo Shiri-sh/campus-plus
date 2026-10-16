@@ -12,24 +12,51 @@ STATUS_APPROVED = "approved"
 STATUS_REJECTED = "rejected"
 
 MATERIAL_TYPES = (
-    ("exams", "Exams"),
-    ("quizzes", "Quizzes"),
-    ("summaries", "Summaries"),
-    ("presentations", "Presentations"),
-    ("recordings", "Recordings"),
+    ("exams", "מבחנים"),
+    ("quizzes", "תרגילים"),
+    ("summaries", "סיכומים"),
+    ("presentations", "מצגות"),
+    ("recordings", "הקלטות"),
 )
 
 FILE_TYPES = (
-    ("exam", "Exam"),
-    ("summary", "Summary"),
-    ("presentation", "Presentation"),
-    ("exercise", "Exercise"),
+    ("exam", "מבחן"),
+    ("summary", "סיכום"),
+    ("presentation", "מצגת"),
+    ("exercise", "תרגיל"),
 )
 
 ACADEMIC_YEARS = tuple(range(2026, 2017, -1))
 
 MATERIAL_TYPE_LABELS = dict(MATERIAL_TYPES)
 FILE_TYPE_LABELS = dict(FILE_TYPES)
+
+GREGORIAN_TO_HEBREW = {
+    2017: 'תשע"ז',
+    2018: 'תשע"ח',
+    2019: 'תשע"ט',
+    2020: 'תש"פ',
+    2021: 'תשפ"א',
+    2022: 'תשפ"ב',
+    2023: 'תשפ"ג',
+    2024: 'תשפ"ד',
+    2025: 'תשפ"ה',
+    2026: 'תשפ"ו',
+}
+
+HEBREW_TO_GREGORIAN = {
+    "תשעז": 2017, "תשעח": 2018, "תשעט": 2019,
+    "תשפ": 2020,
+    "תשפא": 2021, "תשפב": 2022, "תשפג": 2023,
+    "תשפד": 2024, "תשפה": 2025, "תשפו": 2026,
+}
+
+
+def hebrew_year(gregorian):
+    """Convert a Gregorian year to its Hebrew academic year string."""
+    if not gregorian:
+        return "לא ידוע"
+    return GREGORIAN_TO_HEBREW.get(gregorian, str(gregorian))
 
 
 class User(UserMixin, db.Model):
@@ -54,7 +81,7 @@ class User(UserMixin, db.Model):
 
     @property
     def role_label(self):
-        return "Administrator" if self.role == ADMIN else "Student"
+        return "מנהל/ת" if self.role == ADMIN else "סטודנט/ית"
 
 
 class Course(db.Model):
@@ -102,7 +129,11 @@ class Material(db.Model):
 
     @property
     def recommendation_label(self):
-        return "Approve" if self.ai_recommendation != "reject" else "Reject"
+        return "אישור" if self.ai_recommendation != "reject" else "דחייה"
+
+    @property
+    def hebrew_year_label(self):
+        return hebrew_year(self.academic_year)
 
 
 class Report(db.Model):
