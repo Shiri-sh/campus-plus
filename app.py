@@ -5,6 +5,10 @@ from functools import wraps
 from pathlib import Path
 from urllib.parse import urlparse
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from flask import (
     Flask,
     abort,
@@ -22,6 +26,7 @@ from werkzeug.utils import secure_filename
 
 from catalog import approved_materials, explorer_options, suggestion_items
 from classify import ICON_BY_EXTENSION, MATERIAL_TO_FILE_TYPE, classify_source
+from db_config import resolve_database_url
 from extensions import db, login_manager
 from models import (
     ADMIN,
@@ -44,8 +49,10 @@ from seed import seed_catalog
 app = Flask(__name__, instance_relative_config=True)
 os.makedirs(app.instance_path, exist_ok=True)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "campus-plus-dev-key")
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(
-    app.instance_path, "campus_plus.db"
+
+# DATABASE_URL, or all of DB_*, or local SQLite. A partial DB_* set raises.
+app.config["SQLALCHEMY_DATABASE_URI"] = resolve_database_url(
+    os.environ, app.instance_path
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
@@ -150,6 +157,7 @@ def register():
 
     user = User(email=email, role=role)
     user.set_password(password)
+    user.last_login_at = datetime.utcnow()
     db.session.add(user)
     db.session.commit()
     login_user(user)
