@@ -1,0 +1,40 @@
+---
+description: Git safety and agent workflow for Campus+ — no commits or pushes without explicit human approval
+alwaysApply: true
+---
+
+# Git and agent workflow (Campus+)
+
+This repo is a three-person course project ([Campus+](https://github.com/Shiri-sh/campus-plus)). Agents should change code locally and leave version control to the humans unless they are explicitly asked to use git.
+
+## Commits and pushes
+
+- **Do not run `git commit`** unless the human clearly asks you to commit (in the message or a standing user rule).
+- **Do not run `git push`** unless the human clearly asks you to push.
+- If intent is unclear (“save this”, “looks good”), **ask** whether they want a commit, a push, or only local file changes.
+- After implementing work, report what changed and wait for commit/push instructions.
+
+## When the human does ask to commit
+
+- Never commit secrets (`.env`, API keys, credentials). Warn if they ask to include them.
+- Use a short message that explains **why**, matching existing repo style.
+- Do not use `--no-verify`, `--amend`, or force-push unless they explicitly request it.
+- Do not push unless they also asked to push.
+
+## Scope of agent edits
+
+- Prefer minimal diffs aligned with the project layout: reads in `catalog.py`, writes via command functions, routes in `app.py` / `admin_views.py` (see `.cursor/plans/PROJECT_PLAN_UPDATED.md`).
+- Do not rename the tree into `commands/` vs `queries/` as a repo-wide refactor unless the team agreed in an issue.
+
+## Examples
+
+```
+Human: "Implement T2 and open a PR when done."
+→ Code changes only; do not commit or push until they say "commit" / "push" / "create the PR".
+
+Human: "Commit these changes with message X."
+→ Stage relevant files, commit with message X; do not push unless they also ask.
+
+Human: "Push the branch."
+→ Push only if a commit already exists and they asked to push.
+```
