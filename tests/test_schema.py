@@ -13,6 +13,9 @@ def complete_columns():
             "is_blocked": "BOOLEAN",
             "last_login_at": "DATETIME",
         },
+        "course": {
+            "name": "NVARCHAR",
+        },
         "material": {
             "confidence": "INTEGER",
             "ai_recommendation": "VARCHAR",

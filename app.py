@@ -41,6 +41,7 @@ from models import (
     Material,
     Report,
     User,
+    hebrew_year,
 )
 from admin_views import register_admin_routes
 from schema import ensure_schema
@@ -116,11 +117,11 @@ def login():
     user = User.query.filter_by(email=email).first()
 
     if user is None or not user.check_password(password):
-        flash("Invalid institutional email or password.", "error")
+        flash("כתובת דוא״ל מוסדית או סיסמה שגויים.", "error")
         return render_template("auth.html", active_tab="login", form_email=email)
 
     if user.is_blocked:
-        flash("This account has been blocked by an administrator.", "error")
+        flash("חשבון זה נחסם על ידי מנהל/ת.", "error")
         return render_template("auth.html", active_tab="login", form_email=email)
 
     user.last_login_at = datetime.utcnow()
@@ -140,19 +141,19 @@ def register():
     role = request.form.get("role") or ""
 
     if role not in ROLES:
-        flash("Please choose a role: Student or Administrator.", "error")
+        flash("יש לבחור תפקיד: סטודנט/ית או מנהל/ת.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
     if len(password) < 8:
-        flash("Password must be at least 8 characters.", "error")
+        flash("הסיסמה חייבת להכיל לפחות 8 תווים.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
     if password != confirm_password:
-        flash("Password and confirmation do not match.", "error")
+        flash("הסיסמה ואימות הסיסמה אינם תואמים.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
     if User.query.filter_by(email=email).first():
-        flash("This institutional email is already registered.", "error")
+        flash("כתובת דוא״ל מוסדית זו כבר רשומה במערכת.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
     user = User(email=email, role=role)
@@ -192,6 +193,7 @@ def inject_dashboard_url():
         "student_url": student_url,
         "file_types": FILE_TYPES,
         "search_query": request.args.get("q", ""),
+        "hebrew_year": hebrew_year,
     }
 
 
@@ -235,7 +237,7 @@ def student_dashboard():
             .filter_by(course_id=selected_course.id, status=STATUS_APPROVED)
             .distinct()
             .all()
-            if item
+            if item is not None
         ]
         if course_years:
             years = tuple(sorted(course_years, reverse=True))
@@ -300,9 +302,9 @@ def material_payload(material):
         "file_name": material.file_name,
         "course": material.course.name,
         "lecturer": material.lecturer or "—",
-        "academic_year": material.academic_year,
+        "academic_year": hebrew_year(material.academic_year),
         "material_type": material.material_type_label,
-        "ai_summary": material.ai_summary or "Not generated yet.",
+        "ai_summary": material.ai_summary or "עדיין לא נוצר.",
         "preview_kind": preview_kind,
         "preview_url": preview_url,
         "download_url": download_url,
@@ -348,7 +350,7 @@ def report_material(material_id):
     material = approved_material_or_404(material_id)
     message = (request.form.get("message") or "").strip()
     if not message:
-        flash("Please write a report message for the administrator.", "error")
+        flash("יש לכתוב הודעה למנהל/ת.", "error")
         return redirect(url_for("student_dashboard"))
 
     report = Report(
@@ -360,7 +362,7 @@ def report_material(material_id):
     )
     db.session.add(report)
     db.session.commit()
-    flash("Report sent to the administrator.", "success")
+    flash("הדיווח נשלח למנהל/ת.", "success")
     return redirect(url_for("student_dashboard"))
 
 
@@ -397,7 +399,7 @@ def classify_upload():
     if uploaded and uploaded.filename:
         suffix = Path(uploaded.filename).suffix.lower()
         if suffix not in ALLOWED_EXTENSIONS:
-            return jsonify({"error": "Upload a PDF, presentation, or document."}), 400
+            return jsonify({"error": "יש להעלות PDF, מצגת או מסמך."}), 400
         saved_name = stored_upload_name(uploaded.filename)
         uploaded.save(os.path.join(app.config["UPLOAD_FOLDER"], saved_name))
         original_name = secure_filename(uploaded.filename) or saved_name
@@ -417,7 +419,7 @@ def classify_upload():
         }
         source_name = video_link
     else:
-        return jsonify({"error": "Select a file or enter a video link."}), 400
+        return jsonify({"error": "יש לבחור קובץ או להזין קישור לסרטון."}), 400
 
     prediction = classify_source(source_name)
     session["pending_upload"]["prediction"] = prediction
@@ -429,27 +431,27 @@ def classify_upload():
 def confirm_upload():
     pending = session.get("pending_upload")
     if not pending:
-        flash("Select a file or video link first.", "error")
+        flash("יש לבחור קובץ או קישור לסרטון.", "error")
         return redirect(url_for("upload"))
 
     try:
         course_id = int(request.form.get("course_id"))
         academic_year = int(request.form.get("academic_year"))
     except (TypeError, ValueError):
-        flash("Please choose a valid course and academic year.", "error")
+        flash("יש לבחור קורס ושנה אקדמית תקפים.", "error")
         return redirect(url_for("upload"))
 
     material_type = request.form.get("material_type")
     course = db.session.get(Course, course_id)
     if course is None or academic_year not in ACADEMIC_YEARS or material_type not in dict(MATERIAL_TYPES):
-        flash("Please confirm or edit the suggested classification.", "error")
+        flash("יש לאשר או לערוך את הסיווג המוצע.", "error")
         return redirect(url_for("upload"))
 
     file_path = pending["video_link"] or pending["stored_name"]
     prediction = pending.get("prediction") or {}
     confidence = prediction.get("confidence")
     material = Material(
-        file_name=pending["original_name"] if not pending["video_link"] else "Video link",
+        file_name=pending["original_name"] if not pending["video_link"] else "קישור לסרטון",
         course_id=course.id,
         academic_year=academic_year,
         material_type=material_type,

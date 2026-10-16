@@ -301,7 +301,8 @@ button {
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 8px 8px 8px 16px;
+  padding: 8px;
+  padding-inline-start: 16px;
 }
 
 .search-input-wrap input {
@@ -401,7 +402,7 @@ button {
 
 .typeahead button {
   width: 100%;
-  text-align: left;
+  text-align: start;
   border: 0;
   background: transparent;
   border-radius: 8px;
@@ -494,7 +495,7 @@ a.chip {
 
 .empty-state ul {
   margin: 0;
-  padding-left: 18px;
+  padding-inline-start: 18px;
 }
 
 .empty-state a {
@@ -512,7 +513,7 @@ a.chip {
   background: #fff;
   border-radius: var(--radius);
   padding: 16px;
-  text-align: left;
+  text-align: start;
   min-height: 92px;
 }
 
@@ -621,7 +622,7 @@ a.chip {
 .video-link-field {
   width: min(420px, 100%);
   margin: 18px auto 12px;
-  text-align: left;
+  text-align: start;
 }
 
 .dropzone strong {
@@ -753,7 +754,7 @@ table {
 th,
 td {
   padding: 14px 16px;
-  text-align: left;
+  text-align: start;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
@@ -938,7 +939,7 @@ tr:last-child td {
 }
 
 .admin-title {
-  margin-right: auto;
+  margin-inline-end: auto;
   color: var(--muted);
   font-weight: 600;
 }

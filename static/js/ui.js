@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
       frame.title = data.file_name;
       preview.append(frame);
     } else {
-      preview.textContent = "No file is stored for this record yet.";
+      preview.textContent = "לא קיים קובץ שמור לרשומה זו.";
     }
 
     const download = document.querySelector("[data-modal-download]");
@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
         player.src = data.preview_url;
         preview.append(player);
       } else {
-        preview.textContent = "No file is stored for this record yet.";
+        preview.textContent = "לא קיים קובץ שמור לרשומה זו.";
       }
       if (data.download_url) {
         download.href = data.download_url;
@@ -205,22 +205,22 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("predicted-year").value = String(data.academic_year);
     document.getElementById("predicted-type").value = data.material_type;
     confidenceInput.value = `${data.confidence}%`;
-    confidence.textContent = `Confidence ${data.confidence}%`;
+    confidence.textContent = `ביטחון ${data.confidence}%`;
     confidence.classList.remove("hidden");
     spinner.classList.add("hidden");
-    statusText.textContent = "Confirm the suggested classification or edit it manually.";
+    statusText.textContent = "אשר/י את הסיווג המוצע או ערוך/י אותו ידנית.";
   };
 
   const classifyUpload = async (body) => {
     previewBox.classList.remove("hidden");
     spinner.classList.remove("hidden");
     confidence.classList.add("hidden");
-    statusText.textContent = "Classifying the selected material...";
+    statusText.textContent = "מסווג את החומר שנבחר...";
     const response = await fetch("/upload/classify", { method: "POST", body });
     const data = await response.json();
     if (!response.ok) {
       spinner.classList.add("hidden");
-      statusText.textContent = data.error || "Classification failed.";
+      statusText.textContent = data.error || "הסיווג נכשל.";
       return;
     }
     showPrediction(data);
