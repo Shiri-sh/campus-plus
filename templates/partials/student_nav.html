@@ -6,18 +6,18 @@
     </a>
 
     <form class="header-search" action="{{ url_for('student_dashboard') }}" method="get">
-      <label class="sr-only" for="smart-search">Smart search</label>
+      <label class="sr-only" for="smart-search">חיפוש חכם</label>
       <div class="search-input-wrap">
         <input
           id="smart-search"
           name="q"
           type="search"
           value="{{ search_query or '' }}"
-          placeholder="Search with natural language, e.g. differential equations exam 2023"
+          placeholder="חיפוש בשפה חופשית, למשל: מבחן אינפי תשפ״ד"
           data-typeahead
           autocomplete="off"
         />
-        <button class="btn btn-primary" type="submit">Search</button>
+        <button class="btn btn-primary" type="submit">חיפוש</button>
       </div>
       <div class="typeahead" data-suggest-list></div>
       <div class="filters">
@@ -30,14 +30,14 @@
       </div>
     </form>
 
-    <a class="btn btn-cta" href="{{ url_for('upload') }}">Upload New Material</a>
+    <a class="btn btn-cta" href="{{ url_for('upload') }}">העלאת חומר חדש</a>
 
     <div class="profile-chip">
       <div class="avatar">{{ current_user.initials }}</div>
       <div class="profile-meta">
         <strong>{{ current_user.role_label }}</strong>
         <span>{{ current_user.email }}</span>
-        <a class="logout-link" href="{{ url_for('logout') }}">Log out</a>
+        <a class="logout-link" href="{{ url_for('logout') }}">התנתקות</a>
       </div>
     </div>
   </div>
