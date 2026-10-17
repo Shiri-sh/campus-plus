@@ -64,7 +64,6 @@
             <th>שם קובץ</th>
             <th>תאריך העלאה</th>
             <th>קורס משוער</th>
-            <th>ציון ביטחון</th>
             <th>המלצת AI</th>
             <th>פעולות</th>
           </tr>
@@ -75,7 +74,6 @@
               <td>{{ material.file_name }}</td>
               <td>{{ material.uploaded_at.strftime("%d/%m/%Y") }}</td>
               <td>{{ material.course.name }}</td>
-              <td>{% if material.confidence is not none %}{{ material.confidence }}%{% else %}—{% endif %}</td>
               <td>
                 <span class="rec {% if material.ai_recommendation == 'reject' %}rec-reject{% else %}rec-approve{% endif %}">
                   {{ material.recommendation_label }}
