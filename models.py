@@ -1,4 +1,7 @@
+from datetime import datetime, timezone
+
 from flask_login import UserMixin
+from sqlalchemy import event as sa_event
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from extensions import db
@@ -50,6 +53,11 @@ HEBREW_TO_GREGORIAN = {
     "תשפא": 2021, "תשפב": 2022, "תשפג": 2023,
     "תשפד": 2024, "תשפה": 2025, "תשפו": 2026,
 }
+
+
+def _utc_now():
+    """Naive UTC timestamp, matching the rest of the app's DateTime columns."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def hebrew_year(gregorian):
@@ -147,3 +155,24 @@ class Report(db.Model):
     replied_at = db.Column(db.DateTime)
     material = db.relationship("Material", backref="reports")
     reporter = db.relationship(User, backref="reports")
+
+
+class Event(db.Model):
+    """Append-only audit row. Current tables stay the source of truth."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    event_type = db.Column(db.String(60), nullable=False)
+    entity_type = db.Column(db.String(40), nullable=False)
+    entity_id = db.Column(db.Integer, nullable=False)
+    actor_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    # NVARCHAR so Hebrew values inside the JSON survive MSSQL.
+    payload = db.Column(db.UnicodeText)
+    created_at = db.Column(db.DateTime, nullable=False, default=_utc_now)
+
+
+def _reject_event_mutation(_mapper, _connection, _target):
+    raise RuntimeError("Event rows are append-only")
+
+
+sa_event.listens_for(Event, "before_update")(_reject_event_mutation)
+sa_event.listens_for(Event, "before_delete")(_reject_event_mutation)
