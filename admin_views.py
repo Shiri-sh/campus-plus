@@ -23,9 +23,7 @@ from models import (
 
 
 def recommendation_for(material):
-    if material.confidence is None:
-        return "approve"
-    return "approve" if material.confidence >= 70 else "reject"
+    return material_commands.recommendation_for_confidence(material.confidence)
 
 
 def admin_redirect(tab):

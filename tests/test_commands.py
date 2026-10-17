@@ -6,11 +6,13 @@ from flask import Flask
 from sqlalchemy.pool import StaticPool
 
 import models  # noqa: F401
+from admin_views import recommendation_for
 from commands.errors import CommandError, NotFound
 from commands.materials import (
     approve_material,
     confirm_upload,
     delete_material,
+    recommendation_for_confidence,
     reject_material,
     update_material,
 )
@@ -152,6 +154,19 @@ def test_confirm_upload_recommends_reject_when_confidence_is_low_or_missing(app_
     assert low.ai_recommendation == "reject"
     assert low.file_type == "exam"
     assert missing.ai_recommendation == "reject"
+
+
+@pytest.mark.parametrize(
+    ("confidence", "expected"),
+    [(None, "reject"), (0, "reject"), (69, "reject"), (70, "approve"), (80, "approve")],
+)
+def test_admin_backfill_uses_the_upload_recommendation_rule(confidence, expected):
+    class Row:
+        def __init__(self, confidence):
+            self.confidence = confidence
+
+    assert recommendation_for_confidence(confidence) == expected
+    assert recommendation_for(Row(confidence)) == expected
 
 
 def test_confirm_upload_rejects_an_unknown_course_without_an_event(app_context):

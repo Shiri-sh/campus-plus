@@ -37,7 +37,8 @@ def _material(material_id):
     return material
 
 
-def _recommendation(confidence):
+def recommendation_for_confidence(confidence):
+    """Approve at the shared threshold. A missing score is a reject."""
     if (confidence or 0) >= CONFIDENCE_APPROVE_AT:
         return "approve"
     return "reject"
@@ -70,7 +71,7 @@ def confirm_upload(
         file_path=file_path,
         uploader_id=uploader_id,
         confidence=confidence,
-        ai_recommendation=_recommendation(confidence),
+        ai_recommendation=recommendation_for_confidence(confidence),
     )
     db.session.add(material)
     db.session.flush()
