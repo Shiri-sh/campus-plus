@@ -164,7 +164,8 @@ class Event(db.Model):
     event_type = db.Column(db.String(60), nullable=False)
     entity_type = db.Column(db.String(40), nullable=False)
     entity_id = db.Column(db.Integer, nullable=False)
-    actor_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    # SET NULL so deleting a user keeps the audit rows that name them.
+    actor_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"))
     # NVARCHAR so Hebrew values inside the JSON survive MSSQL.
     payload = db.Column(db.UnicodeText)
     created_at = db.Column(db.DateTime, nullable=False, default=_utc_now)

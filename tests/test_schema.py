@@ -4,7 +4,7 @@ from sqlalchemy.pool import StaticPool
 
 import models  # noqa: F401
 from extensions import db
-from schema import ensure_schema, migration_statements
+from schema import ensure_schema, event_actor_fk_statements, migration_statements
 
 
 def complete_columns():
@@ -196,6 +196,26 @@ def test_sqlite_does_not_rewrite_varchar_file_name():
     statements = migration_statements(False, columns)
 
     assert statements == []
+
+
+def test_event_actor_fk_is_rebuilt_when_delete_does_nothing():
+    statements = event_actor_fk_statements("FK_event_actor", 0)
+
+    assert statements == [
+        "ALTER TABLE [event] DROP CONSTRAINT [FK_event_actor]",
+        (
+            "ALTER TABLE [event] ADD CONSTRAINT [FK_event_actor] "
+            "FOREIGN KEY (actor_id) REFERENCES [user] (id) ON DELETE SET NULL"
+        ),
+    ]
+
+
+def test_event_actor_fk_is_left_alone_when_it_already_sets_null():
+    assert event_actor_fk_statements("FK_event_actor", 2) == []
+
+
+def test_missing_event_actor_fk_needs_no_statements():
+    assert event_actor_fk_statements(None, None) == []
 
 
 def test_ensure_schema_adds_missing_column_on_sqlite():

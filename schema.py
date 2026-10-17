@@ -3,6 +3,8 @@ from extensions import db
 # Hebrew-bearing columns. VARCHAR/TEXT on MSSQL use the database code page,
 # which drops characters that SQLite stored as UTF-8.
 _NON_UNICODE_TYPE_NAMES = frozenset({"VARCHAR", "CHAR", "TEXT", "STRING"})
+# sys.foreign_keys.delete_referential_action: 2 means ON DELETE SET NULL.
+_FK_SET_NULL = 2
 _NVARCHAR_COLUMNS = {
     ("course", "name"): "NVARCHAR(255) NOT NULL",
     ("material", "file_name"): "NVARCHAR(255) NOT NULL",
@@ -129,6 +131,45 @@ def migration_statements(is_mssql, columns, unique_constraints=None):
     return additions + upgrades
 
 
+def event_actor_fk_statements(constraint_name, delete_action):
+    """Rebuild an existing actor foreign key so user deletes keep audit rows.
+
+    A missing constraint, or one that already sets NULL, needs no change.
+    Fresh databases get ON DELETE SET NULL from the model itself.
+    """
+    if not constraint_name or delete_action == _FK_SET_NULL:
+        return []
+    quoted = f"[{constraint_name}]"
+    return [
+        f"ALTER TABLE [event] DROP CONSTRAINT {quoted}",
+        (
+            f"ALTER TABLE [event] ADD CONSTRAINT {quoted} "
+            "FOREIGN KEY (actor_id) REFERENCES [user] (id) ON DELETE SET NULL"
+        ),
+    ]
+
+
+def _event_actor_fk():
+    if not _is_mssql():
+        return None, None
+    row = db.session.execute(
+        db.text(
+            "SELECT fk.name, fk.delete_referential_action "
+            "FROM sys.foreign_keys AS fk "
+            "JOIN sys.foreign_key_columns AS fkc "
+            "  ON fk.object_id = fkc.constraint_object_id "
+            "JOIN sys.columns AS c "
+            "  ON fkc.parent_object_id = c.object_id "
+            " AND fkc.parent_column_id = c.column_id "
+            "WHERE fk.parent_object_id = OBJECT_ID(N'event') "
+            "  AND c.name = N'actor_id'"
+        )
+    ).first()
+    if row is None:
+        return None, None
+    return row[0], row[1]
+
+
 def ensure_schema():
     is_mssql = _is_mssql()
     columns = {
@@ -142,6 +183,8 @@ def ensure_schema():
         for table in columns:
             unique_constraints[table] = _unique_constraints_for(table)
     statements = migration_statements(is_mssql, columns, unique_constraints)
+    constraint_name, delete_action = _event_actor_fk()
+    statements.extend(event_actor_fk_statements(constraint_name, delete_action))
     if not statements:
         return
     with db.engine.begin() as connection:
