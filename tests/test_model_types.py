@@ -30,6 +30,7 @@ def compiled_type(table_name, column_name, dialect):
         ("material", "ai_summary", "NVARCHAR(max)"),
         ("report", "message", "NVARCHAR(max)"),
         ("report", "admin_reply", "NVARCHAR(max)"),
+        ("event", "payload", "NVARCHAR(max)"),
     ],
 )
 def test_hebrew_columns_use_national_types_on_mssql(table_name, column_name, expected):
@@ -71,3 +72,19 @@ def test_sqlite_create_all_creates_material_file_name():
     db.metadata.create_all(engine)
 
     assert "file_name" in column_names(engine, "material")
+
+
+def test_sqlite_create_all_creates_event_columns():
+    engine = create_engine("sqlite://")
+
+    db.metadata.create_all(engine)
+
+    assert column_names(engine, "event") == {
+        "id",
+        "event_type",
+        "entity_type",
+        "entity_id",
+        "actor_id",
+        "payload",
+        "created_at",
+    }
