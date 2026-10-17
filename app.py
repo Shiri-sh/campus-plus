@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 from functools import wraps
 from pathlib import Path
 from urllib.parse import urlparse
@@ -25,7 +25,11 @@ from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.utils import secure_filename
 
 from catalog import approved_materials, explorer_options, suggestion_items
-from classify import ICON_BY_EXTENSION, MATERIAL_TO_FILE_TYPE, classify_source
+from classify import ICON_BY_EXTENSION, classify_source
+from commands.errors import CommandError, NotFound
+from commands.materials import confirm_upload as confirm_material_upload
+from commands.reports import create_report
+from commands.users import MIN_PASSWORD_LENGTH, register_user
 from db_config import resolve_database_url
 from extensions import db, login_manager
 from models import (
@@ -39,7 +43,6 @@ from models import (
     STUDENT,
     Course,
     Material,
-    Report,
     User,
     hebrew_year,
 )
@@ -144,7 +147,7 @@ def register():
         flash("יש לבחור תפקיד: סטודנט/ית או מנהל/ת.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
-    if len(password) < 8:
+    if len(password) < MIN_PASSWORD_LENGTH:
         flash("הסיסמה חייבת להכיל לפחות 8 תווים.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
@@ -152,15 +155,12 @@ def register():
         flash("הסיסמה ואימות הסיסמה אינם תואמים.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
-    if User.query.filter_by(email=email).first():
-        flash("כתובת דוא״ל מוסדית זו כבר רשומה במערכת.", "error")
+    try:
+        user = register_user(email, password, role)
+    except CommandError as error:
+        flash(error.message, "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
-    user = User(email=email, role=role)
-    user.set_password(password)
-    user.last_login_at = datetime.utcnow()
-    db.session.add(user)
-    db.session.commit()
     login_user(user)
     return redirect(home_for(user))
 
@@ -347,21 +347,14 @@ def download_material(material_id):
 @app.route("/student/materials/<int:material_id>/report", methods=["POST"])
 @role_required(STUDENT)
 def report_material(material_id):
-    material = approved_material_or_404(material_id)
-    message = (request.form.get("message") or "").strip()
-    if not message:
-        flash("יש לכתוב הודעה למנהל/ת.", "error")
+    try:
+        create_report(material_id, current_user.id, request.form.get("message"))
+    except NotFound:
+        abort(404)
+    except CommandError as error:
+        flash(error.message, "error")
         return redirect(url_for("student_dashboard"))
 
-    report = Report(
-        material_id=material.id,
-        reporter_id=current_user.id,
-        message=message,
-        created_at=datetime.utcnow(),
-        status="open",
-    )
-    db.session.add(report)
-    db.session.commit()
     flash("הדיווח נשלח למנהל/ת.", "success")
     return redirect(url_for("student_dashboard"))
 
@@ -441,31 +434,21 @@ def confirm_upload():
         flash("יש לבחור קורס ושנה אקדמית תקפים.", "error")
         return redirect(url_for("upload"))
 
-    material_type = request.form.get("material_type")
-    course = db.session.get(Course, course_id)
-    if course is None or academic_year not in ACADEMIC_YEARS or material_type not in dict(MATERIAL_TYPES):
-        flash("יש לאשר או לערוך את הסיווג המוצע.", "error")
+    try:
+        material = confirm_material_upload(
+            uploader_id=current_user.id,
+            course_id=course_id,
+            academic_year=academic_year,
+            material_type=request.form.get("material_type"),
+            file_name=pending["original_name"] if not pending["video_link"] else "קישור לסרטון",
+            file_path=pending["video_link"] or pending["stored_name"],
+            icon_type=pending["icon_type"],
+            confidence=(pending.get("prediction") or {}).get("confidence"),
+        )
+    except CommandError as error:
+        flash(error.message, "error")
         return redirect(url_for("upload"))
 
-    file_path = pending["video_link"] or pending["stored_name"]
-    prediction = pending.get("prediction") or {}
-    confidence = prediction.get("confidence")
-    material = Material(
-        file_name=pending["original_name"] if not pending["video_link"] else "קישור לסרטון",
-        course_id=course.id,
-        academic_year=academic_year,
-        material_type=material_type,
-        file_type=MATERIAL_TO_FILE_TYPE[material_type],
-        icon_type=pending["icon_type"],
-        uploaded_at=date.today(),
-        status=STATUS_PENDING,
-        file_path=file_path,
-        uploader_id=current_user.id,
-        confidence=confidence,
-        ai_recommendation="approve" if (confidence or 0) >= 70 else "reject",
-    )
-    db.session.add(material)
-    db.session.commit()
     session.pop("pending_upload", None)
     return render_template(
         "upload.html",
@@ -474,7 +457,7 @@ def confirm_upload():
         material_types=MATERIAL_TYPES,
         prediction=None,
         uploaded=True,
-        pending_course=course.name,
+        pending_course=material.course.name,
     )
 
 
