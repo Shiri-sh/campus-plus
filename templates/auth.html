@@ -7,10 +7,10 @@
       <span class="brand-mark">+</span>
       <span class="brand-name">Campus<span>+</span></span>
     </div>
-    <p class="auth-intro">התחברו עם המייל המוסדי כדי להמשיך.</p>
+    <p class="auth-intro">התחבר/י עם כתובת הדוא״ל המוסדית.</p>
 
     <div class="auth-tabs">
-      <button class="auth-tab {% if active_tab != 'register' %}is-active{% endif %}" type="button" data-tab-group="auth" data-tab-target="login">התחברות</button>
+      <button class="auth-tab {% if active_tab != 'register' %}is-active{% endif %}" type="button" data-tab-group="auth" data-tab-target="login">כניסה</button>
       <button class="auth-tab {% if active_tab == 'register' %}is-active{% endif %}" type="button" data-tab-group="auth" data-tab-target="register">הרשמה</button>
     </div>
 
@@ -25,13 +25,13 @@
     <form class="form-stack {% if active_tab == 'register' %}hidden{% endif %}" action="{{ url_for('login') }}" method="post" data-tab-panel-group="auth" data-tab-panel="login">
       {% include "partials/csrf.html" %}
       <div class="field">
-        <label for="login-email">מייל מוסדי</label>
+        <label for="login-email">דוא״ל מוסדי</label>
         <input id="login-email" name="email" type="email" required placeholder="name@jct.ac.il" value="{{ form_email }}" />
       </div>
       <div class="field">
         <label for="login-password">סיסמה</label>
         <input id="login-password" name="password" type="password" required minlength="8" />
-        <span class="field-hint">חובה. לפחות 8 תווים.</span>
+        <span class="field-hint">שדה חובה. לפחות 8 תווים.</span>
       </div>
       <button class="btn btn-primary btn-wide" type="submit">כניסה</button>
     </form>
@@ -39,13 +39,13 @@
     <form class="form-stack {% if active_tab != 'register' %}hidden{% endif %}" action="{{ url_for('register') }}" method="post" data-tab-panel-group="auth" data-tab-panel="register">
       {% include "partials/csrf.html" %}
       <div class="field">
-        <label for="register-email">מייל מוסדי</label>
+        <label for="register-email">דוא״ל מוסדי</label>
         <input id="register-email" name="email" type="email" required placeholder="name@jct.ac.il" value="{{ form_email }}" />
       </div>
       <div class="field">
         <label for="register-role">תפקיד</label>
         <select id="register-role" name="role" required>
-          <option value="">בחרו תפקיד</option>
+          <option value="">בחר/י תפקיד</option>
           <option value="student">סטודנט/ית</option>
           <option value="admin">מנהל/ת</option>
         </select>
@@ -57,7 +57,7 @@
       <div class="field">
         <label for="register-confirm">אימות סיסמה</label>
         <input id="register-confirm" name="confirm_password" type="password" required minlength="8" />
-        <span class="field-hint">השתמשו במייל המוסדי. הסיסמה חייבת להכיל לפחות 8 תווים.</span>
+        <span class="field-hint">יש להשתמש בדוא״ל המוסדי. הסיסמה חייבת להכיל לפחות 8 תווים.</span>
       </div>
       <button class="btn btn-primary btn-wide" type="submit">יצירת חשבון</button>
     </form>

@@ -12,7 +12,7 @@
     {% endif %}
     {% if selected_year %}
       <span>/</span>
-      <a href="{{ url_for('student_dashboard', course=selected_course.id, year=selected_year) }}#explorer">{{ selected_year }}</a>
+      <a href="{{ url_for('student_dashboard', course=selected_course.id, year=selected_year) }}#explorer">{{ hebrew_year(selected_year) }}</a>
     {% endif %}
     {% if selected_type %}
       <span>/</span>
@@ -25,10 +25,10 @@
   </nav>
 
   <section id="explorer">
-    <h1 class="section-title">סייר היררכיה וקטגוריות</h1>
+    <h1 class="section-title">סייר קורסים וקטגוריות</h1>
     <p class="explorer-help">
-      התיקיות נטענות ממסד הנתונים.
-      לחצו על כרטיס קורס כדי לפתוח אותו, אחר כך שנה, ואחר כך סוג חומר.
+      התיקיות נטענות מבסיס הנתונים.
+      לחצ/י על כרטיס קורס כדי לפתוח אותו, ואז על שנה, ואז על סוג חומר.
     </p>
 
     {% if not selected_course %}
@@ -37,13 +37,7 @@
         {% for course in courses %}
           <a class="nav-card {% if course.file_count %}has-files{% endif %}" href="{{ url_for('student_dashboard', course=course.id) }}#explorer">
             <strong>{{ course.name }}</strong>
-            <span>
-              {% if course.file_count == 1 %}
-                קובץ אחד במסד הנתונים
-              {% else %}
-                {{ course.file_count }} קבצים במסד הנתונים
-              {% endif %}
-            </span>
+            <span>{{ course.file_count }} קבצים</span>
           </a>
         {% endfor %}
       </div>
@@ -52,13 +46,13 @@
       <div class="card-row">
         {% for year in years %}
           <a class="nav-card" href="{{ url_for('student_dashboard', course=selected_course.id, year=year) }}#explorer">
-            <strong>{{ year }}</strong>
+            <strong>{{ hebrew_year(year) }}</strong>
             <span>שנה אקדמית</span>
           </a>
         {% endfor %}
       </div>
     {% else %}
-      <h2 class="explorer-label">סוגי חומר ב{{ selected_course.name }} / {{ selected_year }}</h2>
+      <h2 class="explorer-label">סוגי חומר ב{{ selected_course.name }} / {{ hebrew_year(selected_year) }}</h2>
       <div class="card-row">
         {% for value, label in material_types %}
           <a
@@ -83,7 +77,7 @@
               <div class="file-icon {{ material.icon_type }}">{{ material.icon_label }}</div>
               <div>
                 <h3>{{ material.file_name }}</h3>
-                <p>{{ material.file_type_label }} · הועלה ב-{{ material.uploaded_at.strftime("%d.%m.%Y") }}</p>
+                <p>{{ material.file_type_label }} · הועלה {{ material.uploaded_at.strftime("%d/%m/%Y") }}</p>
                 {% if material.relevance is not none %}
                   <span class="score">רלוונטיות {{ material.relevance }}%</span>
                 {% endif %}
@@ -103,7 +97,7 @@
       </div>
     {% else %}
       <div class="empty-state">
-        <p>בתיקייה זו אין עדיין קבצים מאושרים. קורסים עם קבצים:</p>
+        <p>אין קבצים מאושרים בתיקייה זו. קורסים שיש בהם קבצים:</p>
         <ul>
           {% for course in courses_with_files %}
             <li>
@@ -123,7 +117,7 @@
       <h2 data-modal-name>חומר</h2>
       <button class="btn btn-ghost" type="button" data-close-modal>סגירה</button>
     </div>
-    <div class="preview-frame" data-preview-frame>עדיין אין קובץ שמור לרשומה זו.</div>
+    <div class="preview-frame" data-preview-frame>לא קיים קובץ שמור לרשומה זו.</div>
     <div class="meta-grid">
       <div>
         <span>שם הקורס</span>
@@ -143,8 +137,8 @@
       </div>
     </div>
     <div class="ai-summary">
-      <h3>תקציר תוכן אוטומטי</h3>
-      <p data-modal-summary>טרם נוצר.</p>
+      <h3>סיכום תוכן אוטומטי</h3>
+      <p data-modal-summary>עדיין לא נוצר.</p>
     </div>
     <div class="modal-actions">
       <a class="btn btn-primary hidden" data-modal-download href="#">הורדה</a>
@@ -163,7 +157,7 @@
       {% include "partials/csrf.html" %}
       <div class="field">
         <label for="report-message">הודעה למנהל/ת</label>
-        <textarea id="report-message" name="message" rows="5" required placeholder="תארו חומר פגום, מיושן או חסר."></textarea>
+        <textarea id="report-message" name="message" rows="5" required placeholder="תאר/י תוכן פגום, לא עדכני או חסר."></textarea>
       </div>
       <button class="btn btn-primary" type="submit">שליחת דיווח</button>
     </form>

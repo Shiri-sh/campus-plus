@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Campus+ | העלאת חומר חדש{% endblock %}
+{% block title %}Campus+ | העלאת חומר{% endblock %}
 {% block body %}
 {% include "partials/student_nav.html" %}
 
@@ -7,15 +7,15 @@
   <h1 class="section-title">העלאת חומר חדש</h1>
 
   <section class="dropzone" data-dropzone>
-    <strong>גררו קבצים לכאן</strong>
-    <p>קובצי PDF, מצגות, מסמכים או קישור לוידאו.</p>
+    <strong>גרור/י קבצים לכאן</strong>
+    <p>קבצי PDF, מצגות, מסמכים או קישור לסרטון.</p>
     <input class="sr-only" id="upload-file" type="file" name="file" accept=".pdf,.ppt,.pptx,.doc,.docx" data-upload-file />
-    <label class="btn btn-primary" for="upload-file">בחירת קבצים</label>
+    <label class="btn btn-primary" for="upload-file">בחירת קובץ</label>
     <div class="field video-link-field">
-      <label for="video-link">קישור לוידאו</label>
+      <label for="video-link">קישור לסרטון</label>
       <input id="video-link" type="url" name="video_link" placeholder="https://" data-video-link />
     </div>
-    <button class="btn btn-ghost" type="button" data-classify-link>סיווג קישור לוידאו</button>
+    <button class="btn btn-ghost" type="button" data-classify-link>סיווג קישור לסרטון</button>
     <p class="field-hint" data-upload-name></p>
   </section>
 
@@ -23,7 +23,7 @@
     <header>
       <div>
         <h2 class="section-title">תצוגה מקדימה של סיווג אוטומטי</h2>
-        <p class="field-hint" data-classify-status>התחזיות מופיעות לאחר בחירת קובץ.</p>
+        <p class="field-hint" data-classify-status>התחזיות יופיעו לאחר בחירת קובץ.</p>
       </div>
       <div class="file-actions">
         <span class="spinner hidden" data-classify-spinner aria-hidden="true"></span>
@@ -46,7 +46,7 @@
           <label for="predicted-year">שנה אקדמית</label>
           <select id="predicted-year" name="academic_year" required>
             {% for year in years %}
-              <option value="{{ year }}">{{ year }}</option>
+              <option value="{{ year }}">{{ hebrew_year(year) }}</option>
             {% endfor %}
           </select>
         </div>
@@ -59,19 +59,19 @@
           </select>
         </div>
         <div class="field">
-          <label for="predicted-confidence">הסתברות מדידה</label>
+          <label for="predicted-confidence">רמת ביטחון</label>
           <input id="predicted-confidence" data-confidence-input value="" readonly />
         </div>
       </div>
       <div class="file-actions">
-        <button class="btn btn-primary" type="submit">אישור הסיווג</button>
+        <button class="btn btn-primary" type="submit">אישור סיווג</button>
       </div>
     </form>
   </section>
 
   {% if uploaded %}
     <p class="status-banner">
-      ממתין לאישור — {{ pending_course }} נשמר ואינו זמין למשתמשים עד שמנהל/ת יאשר אותו.
+      ממתין לאישור — {{ pending_course }} נשמר וזמין למשתמשים רק לאחר אישור מנהל/ת.
     </p>
   {% endif %}
 </main>

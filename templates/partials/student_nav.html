@@ -13,7 +13,7 @@
           name="q"
           type="search"
           value="{{ search_query or '' }}"
-          placeholder="חיפוש בשפה טבעית, למשל מבחן משדיף 2023"
+          placeholder="חיפוש בשפה חופשית, למשל: מבחן אינפי תשפ״ד"
           data-typeahead
           autocomplete="off"
         />
@@ -37,7 +37,7 @@
       <div class="profile-meta">
         <strong>{{ current_user.role_label }}</strong>
         <span>{{ current_user.email }}</span>
-        <a class="logout-link" href="{{ url_for('logout') }}">יציאה</a>
+        <a class="logout-link" href="{{ url_for('logout') }}">התנתקות</a>
       </div>
     </div>
   </div>

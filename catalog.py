@@ -10,6 +10,7 @@ from models import (
     STATUS_APPROVED,
     Course,
     Material,
+    hebrew_year,
 )
 
 FILE_TYPE_ALIASES = {
@@ -124,7 +125,7 @@ def suggestion_items(query):
             suggestions.append(
                 {
                     "label": material.file_name,
-                    "hint": f"{material.course.name} · {material.academic_year}",
+                    "hint": f"{material.course.name} · {hebrew_year(material.academic_year)}",
                 }
             )
 
@@ -148,7 +149,7 @@ def explorer_options():
         .filter_by(status=STATUS_APPROVED)
         .distinct()
         .all()
-        if year
+        if year is not None
     ]
     return {
         "courses": courses,

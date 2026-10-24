@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
       frame.title = data.file_name;
       preview.append(frame);
     } else {
-      preview.textContent = "עדיין אין קובץ שמור לרשומה זו.";
+      preview.textContent = "לא קיים קובץ שמור לרשומה זו.";
     }
 
     const download = document.querySelector("[data-modal-download]");
@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
         player.src = data.preview_url;
         preview.append(player);
       } else {
-        preview.textContent = "עדיין אין קובץ שמור לרשומה זו.";
+        preview.textContent = "לא קיים קובץ שמור לרשומה זו.";
       }
       if (data.download_url) {
         download.href = data.download_url;
@@ -209,7 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
     confidence.textContent = `ביטחון ${data.confidence}%`;
     confidence.classList.remove("hidden");
     spinner.classList.add("hidden");
-    statusText.textContent = "אשרו את הסיווג המוצע או ערכו אותו ידנית.";
+    statusText.textContent = "אשר/י את הסיווג המוצע או ערוך/י אותו ידנית.";
   };
 
   const classifyUpload = async (body) => {
