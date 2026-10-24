@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Campus+ | Sign in{% endblock %}
+{% block title %}Campus+ | כניסה{% endblock %}
 {% block body %}
 <main class="auth-page">
   <section class="auth-card">
@@ -7,11 +7,11 @@
       <span class="brand-mark">+</span>
       <span class="brand-name">Campus<span>+</span></span>
     </div>
-    <p class="auth-intro">Sign in with your institutional email to continue.</p>
+    <p class="auth-intro">התחברו עם המייל המוסדי כדי להמשיך.</p>
 
     <div class="auth-tabs">
-      <button class="auth-tab {% if active_tab != 'register' %}is-active{% endif %}" type="button" data-tab-group="auth" data-tab-target="login">Login</button>
-      <button class="auth-tab {% if active_tab == 'register' %}is-active{% endif %}" type="button" data-tab-group="auth" data-tab-target="register">Register</button>
+      <button class="auth-tab {% if active_tab != 'register' %}is-active{% endif %}" type="button" data-tab-group="auth" data-tab-target="login">התחברות</button>
+      <button class="auth-tab {% if active_tab == 'register' %}is-active{% endif %}" type="button" data-tab-group="auth" data-tab-target="register">הרשמה</button>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -23,41 +23,43 @@
     {% endwith %}
 
     <form class="form-stack {% if active_tab == 'register' %}hidden{% endif %}" action="{{ url_for('login') }}" method="post" data-tab-panel-group="auth" data-tab-panel="login">
+      {% include "partials/csrf.html" %}
       <div class="field">
-        <label for="login-email">Institutional email</label>
+        <label for="login-email">מייל מוסדי</label>
         <input id="login-email" name="email" type="email" required placeholder="name@jct.ac.il" value="{{ form_email }}" />
       </div>
       <div class="field">
-        <label for="login-password">Password</label>
+        <label for="login-password">סיסמה</label>
         <input id="login-password" name="password" type="password" required minlength="8" />
-        <span class="field-hint">Required. Minimum 8 characters.</span>
+        <span class="field-hint">חובה. לפחות 8 תווים.</span>
       </div>
-      <button class="btn btn-primary btn-wide" type="submit">Sign in</button>
+      <button class="btn btn-primary btn-wide" type="submit">כניסה</button>
     </form>
 
     <form class="form-stack {% if active_tab != 'register' %}hidden{% endif %}" action="{{ url_for('register') }}" method="post" data-tab-panel-group="auth" data-tab-panel="register">
+      {% include "partials/csrf.html" %}
       <div class="field">
-        <label for="register-email">Institutional email</label>
+        <label for="register-email">מייל מוסדי</label>
         <input id="register-email" name="email" type="email" required placeholder="name@jct.ac.il" value="{{ form_email }}" />
       </div>
       <div class="field">
-        <label for="register-role">Role</label>
+        <label for="register-role">תפקיד</label>
         <select id="register-role" name="role" required>
-          <option value="">Select a role</option>
-          <option value="student">Student</option>
-          <option value="admin">Administrator</option>
+          <option value="">בחרו תפקיד</option>
+          <option value="student">סטודנט/ית</option>
+          <option value="admin">מנהל/ת</option>
         </select>
       </div>
       <div class="field">
-        <label for="register-password">Password</label>
+        <label for="register-password">סיסמה</label>
         <input id="register-password" name="password" type="password" required minlength="8" />
       </div>
       <div class="field">
-        <label for="register-confirm">Confirm password</label>
+        <label for="register-confirm">אימות סיסמה</label>
         <input id="register-confirm" name="confirm_password" type="password" required minlength="8" />
-        <span class="field-hint">Use your institutional email. Password must be at least 8 characters.</span>
+        <span class="field-hint">השתמשו במייל המוסדי. הסיסמה חייבת להכיל לפחות 8 תווים.</span>
       </div>
-      <button class="btn btn-primary btn-wide" type="submit">Create account</button>
+      <button class="btn btn-primary btn-wide" type="submit">יצירת חשבון</button>
     </form>
   </section>
 </main>

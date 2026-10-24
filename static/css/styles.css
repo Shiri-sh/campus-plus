@@ -18,7 +18,7 @@
   --pending: #92400e;
   --shadow: 0 10px 30px rgba(18, 35, 58, 0.08);
   --radius: 14px;
-  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font: "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", Tahoma, Arial, sans-serif;
 }
 
 * {
@@ -32,6 +32,7 @@ body {
   font-family: var(--font);
   color: var(--ink);
   background: var(--bg);
+  text-align: start;
 }
 
 button,
@@ -97,8 +98,8 @@ button {
   place-items: center;
   padding: 32px 16px;
   background:
-    radial-gradient(circle at top right, #d8eef3 0%, transparent 36%),
-    radial-gradient(circle at bottom left, #dceee9 0%, transparent 32%),
+    radial-gradient(circle at top left, #d8eef3 0%, transparent 36%),
+    radial-gradient(circle at bottom right, #dceee9 0%, transparent 32%),
     var(--bg);
 }
 
@@ -301,7 +302,9 @@ button {
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 8px 8px 8px 16px;
+  padding-block: 8px;
+  padding-inline-start: 16px;
+  padding-inline-end: 8px;
 }
 
 .search-input-wrap input {
@@ -401,7 +404,7 @@ button {
 
 .typeahead button {
   width: 100%;
-  text-align: left;
+  text-align: start;
   border: 0;
   background: transparent;
   border-radius: 8px;
@@ -494,7 +497,7 @@ a.chip {
 
 .empty-state ul {
   margin: 0;
-  padding-left: 18px;
+  padding-inline-start: 18px;
 }
 
 .empty-state a {
@@ -512,7 +515,7 @@ a.chip {
   background: #fff;
   border-radius: var(--radius);
   padding: 16px;
-  text-align: left;
+  text-align: start;
   min-height: 92px;
 }
 
@@ -621,7 +624,7 @@ a.chip {
 .video-link-field {
   width: min(420px, 100%);
   margin: 18px auto 12px;
-  text-align: left;
+  text-align: start;
 }
 
 .dropzone strong {
@@ -753,7 +756,7 @@ table {
 th,
 td {
   padding: 14px 16px;
-  text-align: left;
+  text-align: start;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
@@ -938,9 +941,16 @@ tr:last-child td {
 }
 
 .admin-title {
-  margin-right: auto;
+  margin-inline-end: auto;
   color: var(--muted);
   font-weight: 600;
+}
+
+input[type="email"],
+input[type="url"],
+input[type="password"] {
+  direction: ltr;
+  text-align: left;
 }
 
 @media (max-width: 860px) {

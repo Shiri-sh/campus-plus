@@ -1,10 +1,12 @@
+import logging
 import os
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 from functools import wraps
 from pathlib import Path
 from urllib.parse import urlparse
 
+from dotenv import load_dotenv
 from flask import (
     Flask,
     abort,
@@ -18,11 +20,13 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required, login_user, logout_user
+from flask_wtf.csrf import CSRFError
 from werkzeug.utils import secure_filename
 
 from catalog import approved_materials, explorer_options, suggestion_items
-from classify import ICON_BY_EXTENSION, MATERIAL_TO_FILE_TYPE, classify_source
-from extensions import db, login_manager
+from classify import ICON_BY_EXTENSION, classify_source
+from commands.materials import confirm_pending_upload
+from extensions import csrf, db, login_manager
 from models import (
     ADMIN,
     ACADEMIC_YEARS,
@@ -30,7 +34,6 @@ from models import (
     MATERIAL_TYPES,
     ROLES,
     STATUS_APPROVED,
-    STATUS_PENDING,
     STUDENT,
     Course,
     Material,
@@ -41,12 +44,29 @@ from admin_views import register_admin_routes
 from schema import ensure_schema
 from seed import seed_catalog
 
+load_dotenv()
+
+DEFAULT_SECRET_KEY = "campus-plus-dev-key"
+
+
+def debug_enabled():
+    value = os.environ.get("FLASK_DEBUG")
+    if value is None:
+        return True
+    return value.strip().lower() in {"1", "true", "yes"}
+
+
 app = Flask(__name__, instance_relative_config=True)
 os.makedirs(app.instance_path, exist_ok=True)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "campus-plus-dev-key")
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(
-    app.instance_path, "campus_plus.db"
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or DEFAULT_SECRET_KEY
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL") or (
+    "sqlite:///" + os.path.join(app.instance_path, "campus_plus.db")
 )
+if app.config["SECRET_KEY"] == DEFAULT_SECRET_KEY and not debug_enabled():
+    logging.getLogger("campusplus").warning(
+        "SECRET_KEY is the default development value. "
+        "Set a strong SECRET_KEY in the environment before running with debug disabled."
+    )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 app.config["UPLOAD_FOLDER"] = os.path.join(app.instance_path, "uploads")
@@ -55,7 +75,12 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 ALLOWED_EXTENSIONS = set(ICON_BY_EXTENSION)
 
 db.init_app(app)
+csrf.init_app(app)
 login_manager.init_app(app)
+
+CSRF_FAILURE_MESSAGE = (
+    "פג תוקף ההפעלה או שהטופס אינו תקף. רעננו את העמוד ונסו שוב."
+)
 
 with app.app_context():
     db.create_all()
@@ -66,6 +91,21 @@ with app.app_context():
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
+
+
+def _csrf_error_wants_json():
+    if request.path == "/upload/classify":
+        return True
+    best = request.accept_mimetypes.best_match(["application/json", "text/html"])
+    return best == "application/json"
+
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(error):
+    if _csrf_error_wants_json():
+        return jsonify({"error": CSRF_FAILURE_MESSAGE}), 400
+    flash(CSRF_FAILURE_MESSAGE, "error")
+    return redirect(request.referrer or url_for("auth"))
 
 
 def home_for(user):
@@ -109,11 +149,11 @@ def login():
     user = User.query.filter_by(email=email).first()
 
     if user is None or not user.check_password(password):
-        flash("Invalid institutional email or password.", "error")
+        flash("מייל מוסדי או סיסמה שגויים.", "error")
         return render_template("auth.html", active_tab="login", form_email=email)
 
     if user.is_blocked:
-        flash("This account has been blocked by an administrator.", "error")
+        flash("חשבון זה נחסם על ידי מנהל/ת.", "error")
         return render_template("auth.html", active_tab="login", form_email=email)
 
     user.last_login_at = datetime.utcnow()
@@ -133,19 +173,19 @@ def register():
     role = request.form.get("role") or ""
 
     if role not in ROLES:
-        flash("Please choose a role: Student or Administrator.", "error")
+        flash("יש לבחור תפקיד: סטודנט/ית או מנהל/ת.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
     if len(password) < 8:
-        flash("Password must be at least 8 characters.", "error")
+        flash("הסיסמה חייבת להכיל לפחות 8 תווים.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
     if password != confirm_password:
-        flash("Password and confirmation do not match.", "error")
+        flash("הסיסמה ואימות הסיסמה אינם תואמים.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
     if User.query.filter_by(email=email).first():
-        flash("This institutional email is already registered.", "error")
+        flash("המייל המוסדי כבר רשום במערכת.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
     user = User(email=email, role=role)
@@ -294,7 +334,7 @@ def material_payload(material):
         "lecturer": material.lecturer or "—",
         "academic_year": material.academic_year,
         "material_type": material.material_type_label,
-        "ai_summary": material.ai_summary or "Not generated yet.",
+        "ai_summary": material.ai_summary or "טרם נוצר.",
         "preview_kind": preview_kind,
         "preview_url": preview_url,
         "download_url": download_url,
@@ -340,7 +380,7 @@ def report_material(material_id):
     material = approved_material_or_404(material_id)
     message = (request.form.get("message") or "").strip()
     if not message:
-        flash("Please write a report message for the administrator.", "error")
+        flash("יש לכתוב הודעת דיווח למנהל/ת.", "error")
         return redirect(url_for("student_dashboard"))
 
     report = Report(
@@ -352,7 +392,7 @@ def report_material(material_id):
     )
     db.session.add(report)
     db.session.commit()
-    flash("Report sent to the administrator.", "success")
+    flash("הדיווח נשלח למנהל/ת.", "success")
     return redirect(url_for("student_dashboard"))
 
 
@@ -389,7 +429,7 @@ def classify_upload():
     if uploaded and uploaded.filename:
         suffix = Path(uploaded.filename).suffix.lower()
         if suffix not in ALLOWED_EXTENSIONS:
-            return jsonify({"error": "Upload a PDF, presentation, or document."}), 400
+            return jsonify({"error": "יש להעלות קובץ PDF, מצגת או מסמך."}), 400
         saved_name = stored_upload_name(uploaded.filename)
         uploaded.save(os.path.join(app.config["UPLOAD_FOLDER"], saved_name))
         original_name = secure_filename(uploaded.filename) or saved_name
@@ -409,7 +449,7 @@ def classify_upload():
         }
         source_name = video_link
     else:
-        return jsonify({"error": "Select a file or enter a video link."}), 400
+        return jsonify({"error": "בחרו קובץ או הזינו קישור לוידאו."}), 400
 
     prediction = classify_source(source_name)
     session["pending_upload"]["prediction"] = prediction
@@ -421,42 +461,44 @@ def classify_upload():
 def confirm_upload():
     pending = session.get("pending_upload")
     if not pending:
-        flash("Select a file or video link first.", "error")
+        flash("יש לבחור קובץ או קישור לוידאו תחילה.", "error")
         return redirect(url_for("upload"))
 
     try:
         course_id = int(request.form.get("course_id"))
         academic_year = int(request.form.get("academic_year"))
     except (TypeError, ValueError):
-        flash("Please choose a valid course and academic year.", "error")
+        flash("יש לבחור קורס ושנה אקדמית תקינים.", "error")
         return redirect(url_for("upload"))
 
     material_type = request.form.get("material_type")
-    course = db.session.get(Course, course_id)
-    if course is None or academic_year not in ACADEMIC_YEARS or material_type not in dict(MATERIAL_TYPES):
-        flash("Please confirm or edit the suggested classification.", "error")
+    if db.session.get(Course, course_id) is None or academic_year not in ACADEMIC_YEARS or material_type not in dict(MATERIAL_TYPES):
+        flash("יש לאשר או לערוך את הסיווג המוצע.", "error")
         return redirect(url_for("upload"))
 
-    file_path = pending["video_link"] or pending["stored_name"]
-    prediction = pending.get("prediction") or {}
-    confidence = prediction.get("confidence")
-    material = Material(
-        file_name=pending["original_name"] if not pending["video_link"] else "Video link",
-        course_id=course.id,
-        academic_year=academic_year,
-        material_type=material_type,
-        file_type=MATERIAL_TO_FILE_TYPE[material_type],
-        icon_type=pending["icon_type"],
-        uploaded_at=date.today(),
-        status=STATUS_PENDING,
-        file_path=file_path,
-        uploader_id=current_user.id,
-        confidence=confidence,
-        ai_recommendation="approve" if (confidence or 0) >= 70 else "reject",
-    )
-    db.session.add(material)
-    db.session.commit()
+    notify_key = pending.get("stored_name") or pending.get("video_link") or pending.get("original_name")
+    notified = list(session.get("notified_uploads") or [])
+    already_notified = notify_key in notified
     session.pop("pending_upload", None)
+
+    try:
+        material = confirm_pending_upload(
+            pending,
+            course_id=course_id,
+            academic_year=academic_year,
+            material_type=material_type,
+            uploader_id=current_user.id,
+            admin_approvals_url=url_for("admin", tab="approvals", _external=True),
+            already_notified=already_notified,
+        )
+    except ValueError:
+        flash("יש לאשר או לערוך את הסיווג המוצע.", "error")
+        return redirect(url_for("upload"))
+
+    if notify_key and notify_key not in notified:
+        notified.append(notify_key)
+        session["notified_uploads"] = notified[-20:]
+
     return render_template(
         "upload.html",
         courses=Course.query.order_by(Course.name).all(),
@@ -464,7 +506,7 @@ def confirm_upload():
         material_types=MATERIAL_TYPES,
         prediction=None,
         uploaded=True,
-        pending_course=course.name,
+        pending_course=material.course.name,
     )
 
 
@@ -472,4 +514,4 @@ register_admin_routes(app, role_required, material_payload)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=debug_enabled())

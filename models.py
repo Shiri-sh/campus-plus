@@ -12,19 +12,30 @@ STATUS_APPROVED = "approved"
 STATUS_REJECTED = "rejected"
 
 MATERIAL_TYPES = (
-    ("exams", "Exams"),
-    ("quizzes", "Quizzes"),
-    ("summaries", "Summaries"),
-    ("presentations", "Presentations"),
-    ("recordings", "Recordings"),
+    ("exams", "מבחנים"),
+    ("quizzes", "תרגילים"),
+    ("summaries", "סיכומים"),
+    ("presentations", "מצגות"),
+    ("recordings", "הקלטות"),
 )
 
 FILE_TYPES = (
-    ("exam", "Exam"),
-    ("summary", "Summary"),
-    ("presentation", "Presentation"),
-    ("exercise", "Exercise"),
+    ("exam", "מבחן"),
+    ("summary", "סיכום"),
+    ("presentation", "מצגת"),
+    ("exercise", "תרגיל"),
 )
+
+STATUS_LABELS = {
+    STATUS_PENDING: "ממתין",
+    STATUS_APPROVED: "מאושר",
+    STATUS_REJECTED: "דחוי",
+}
+
+REPORT_STATUS_LABELS = {
+    "open": "פתוח",
+    "answered": "נענה",
+}
 
 ACADEMIC_YEARS = tuple(range(2026, 2017, -1))
 
@@ -54,7 +65,7 @@ class User(UserMixin, db.Model):
 
     @property
     def role_label(self):
-        return "Administrator" if self.role == ADMIN else "Student"
+        return "מנהל/ת" if self.role == ADMIN else "סטודנט/ית"
 
 
 class Course(db.Model):
@@ -102,7 +113,11 @@ class Material(db.Model):
 
     @property
     def recommendation_label(self):
-        return "Approve" if self.ai_recommendation != "reject" else "Reject"
+        return "דחייה" if self.ai_recommendation == "reject" else "אישור"
+
+    @property
+    def status_label(self):
+        return STATUS_LABELS.get(self.status, self.status)
 
 
 class Report(db.Model):
@@ -116,3 +131,7 @@ class Report(db.Model):
     replied_at = db.Column(db.DateTime)
     material = db.relationship("Material", backref="reports")
     reporter = db.relationship(User, backref="reports")
+
+    @property
+    def status_label(self):
+        return REPORT_STATUS_LABELS.get(self.status, self.status)

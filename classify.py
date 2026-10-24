@@ -4,11 +4,11 @@ from datetime import date
 from models import ACADEMIC_YEARS, MATERIAL_TYPES, Course
 
 TYPE_RULES = (
-    (("exam", "midterm", "final", "moed"), "exams", "exam"),
-    (("quiz", "exercise", "homework", "assignment", "sheet"), "quizzes", "exercise"),
-    (("summary", "summaries", "notes", "lecture"), "summaries", "summary"),
-    (("slide", "slides", "presentation", "ppt"), "presentations", "presentation"),
-    (("recording", "video", "zoom", "link"), "recordings", "recording"),
+    (("exam", "midterm", "final", "moed", "מבחן", "מבחנים", "מועד"), "exams", "exam"),
+    (("quiz", "exercise", "homework", "assignment", "sheet", "תרגיל", "תרגילים", "תרגול"), "quizzes", "exercise"),
+    (("summary", "summaries", "notes", "lecture", "סיכום", "סיכומים"), "summaries", "summary"),
+    (("slide", "slides", "presentation", "ppt", "מצגת", "מצגות"), "presentations", "presentation"),
+    (("recording", "video", "zoom", "link", "הקלטה", "הרצאה"), "recordings", "recording"),
 )
 
 MATERIAL_TO_FILE_TYPE = {
@@ -29,7 +29,12 @@ ICON_BY_EXTENSION = {
 
 
 def tokenize(text):
-    return [token for token in re.findall(r"[a-z0-9]+", (text or "").lower()) if len(token) > 2]
+    tokens = []
+    for token in re.findall(r"[a-z0-9'\u0590-\u05FF]+", (text or "").lower()):
+        hebrew = any("\u0590" <= char <= "\u05FF" for char in token)
+        if (hebrew and len(token) >= 2) or (not hebrew and len(token) > 2):
+            tokens.append(token)
+    return tokens
 
 
 def predict_material_type(text):
