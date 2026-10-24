@@ -85,9 +85,11 @@
                 <div class="table-actions">
                   <button class="btn btn-ghost" type="button" data-admin-preview="{{ material.id }}">תצוגה מקדימה</button>
                   <form action="{{ url_for('approve_material', material_id=material.id) }}" method="post">
+                    {% include "partials/csrf.html" %}
                     <button class="btn btn-success" type="submit">אישור</button>
                   </form>
                   <form action="{{ url_for('reject_material', material_id=material.id) }}" method="post">
+                    {% include "partials/csrf.html" %}
                     <button class="btn btn-danger" type="submit">דחייה</button>
                   </form>
                 </div>
@@ -113,6 +115,7 @@
               <p class="field-hint">תגובה שנשמרה: {{ report.admin_reply }}</p>
             {% endif %}
             <form class="form-stack reply-form" action="{{ url_for('reply_report', report_id=report.id) }}" method="post">
+              {% include "partials/csrf.html" %}
               <div class="field">
                 <label class="sr-only" for="reply-{{ report.id }}">תגובה ל{{ report.reporter.email }}</label>
                 <textarea id="reply-{{ report.id }}" name="reply" rows="3" required placeholder="כתוב/י עדכון ישיר לסטודנט/ית."></textarea>
@@ -144,9 +147,11 @@
         {% if user.id != current_user.id %}
           <div class="table-actions">
             <form action="{{ url_for('block_user', user_id=user.id) }}" method="post">
+              {% include "partials/csrf.html" %}
               <button class="btn btn-ghost" type="submit">{{ "ביטול חסימה" if user.is_blocked else "חסימה" }}</button>
             </form>
             <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post">
+              {% include "partials/csrf.html" %}
               <button class="btn btn-danger" type="submit">מחיקה</button>
             </form>
           </div>
@@ -170,6 +175,7 @@
             <h3>{{ material.file_name }}</h3>
             <p>{{ material.course.name }} · {{ hebrew_year(material.academic_year) }} · {{ material.material_type_label }} · {{ material.status }}</p>
             <form class="prediction-grid" action="{{ url_for('update_material', material_id=material.id) }}" method="post">
+              {% include "partials/csrf.html" %}
               <div class="field">
                 <label for="name-{{ material.id }}">שם קובץ</label>
                 <input id="name-{{ material.id }}" name="file_name" value="{{ material.file_name }}" />
@@ -210,6 +216,7 @@
           <div class="table-actions">
             <button class="btn btn-ghost" type="button" data-admin-preview="{{ material.id }}">תצוגה מקדימה</button>
             <form action="{{ url_for('delete_material', material_id=material.id) }}" method="post">
+              {% include "partials/csrf.html" %}
               <button class="btn btn-danger" type="submit">מחיקה</button>
             </form>
           </div>

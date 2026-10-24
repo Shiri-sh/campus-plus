@@ -32,6 +32,7 @@
     </header>
 
     <form class="form-stack" action="{{ url_for('confirm_upload') }}" method="post" data-confirm-form>
+      {% include "partials/csrf.html" %}
       <div class="prediction-grid">
         <div class="field">
           <label for="predicted-course">קורס</label>

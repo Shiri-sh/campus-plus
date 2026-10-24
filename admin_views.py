@@ -7,6 +7,7 @@ from flask_login import current_user
 from sqlalchemy import func
 
 from classify import MATERIAL_TO_FILE_TYPE
+from commands.materials import delete_material as delete_material_record
 from extensions import db
 from models import (
     ADMIN,
@@ -150,9 +151,7 @@ def register_admin_routes(app, role_required, material_payload):
     @role_required(ADMIN)
     def delete_material(material_id):
         material = admin_material(material_id)
-        Report.query.filter_by(material_id=material.id).delete()
-        db.session.delete(material)
-        db.session.commit()
+        delete_material_record(material)
         flash("החומר נמחק.", "success")
         return admin_redirect("materials")
 

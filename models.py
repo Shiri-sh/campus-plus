@@ -29,6 +29,17 @@ FILE_TYPES = (
     ("exercise", "תרגיל"),
 )
 
+STATUS_LABELS = {
+    STATUS_PENDING: "ממתין",
+    STATUS_APPROVED: "מאושר",
+    STATUS_REJECTED: "דחוי",
+}
+
+REPORT_STATUS_LABELS = {
+    "open": "פתוח",
+    "answered": "נענה",
+}
+
 ACADEMIC_YEARS = tuple(range(2026, 2017, -1))
 
 MATERIAL_TYPE_LABELS = dict(MATERIAL_TYPES)
@@ -140,6 +151,10 @@ class Material(db.Model):
         return "אישור" if self.ai_recommendation != "reject" else "דחייה"
 
     @property
+    def status_label(self):
+        return STATUS_LABELS.get(self.status, self.status)
+
+    @property
     def hebrew_year_label(self):
         return hebrew_year(self.academic_year)
 
@@ -155,6 +170,10 @@ class Report(db.Model):
     replied_at = db.Column(db.DateTime)
     material = db.relationship("Material", backref="reports")
     reporter = db.relationship(User, backref="reports")
+
+    @property
+    def status_label(self):
+        return REPORT_STATUS_LABELS.get(self.status, self.status)
 
 
 class Event(db.Model):

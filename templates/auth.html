@@ -23,6 +23,7 @@
     {% endwith %}
 
     <form class="form-stack {% if active_tab == 'register' %}hidden{% endif %}" action="{{ url_for('login') }}" method="post" data-tab-panel-group="auth" data-tab-panel="login">
+      {% include "partials/csrf.html" %}
       <div class="field">
         <label for="login-email">דוא״ל מוסדי</label>
         <input id="login-email" name="email" type="email" required placeholder="name@jct.ac.il" value="{{ form_email }}" />
@@ -36,6 +37,7 @@
     </form>
 
     <form class="form-stack {% if active_tab != 'register' %}hidden{% endif %}" action="{{ url_for('register') }}" method="post" data-tab-panel-group="auth" data-tab-panel="register">
+      {% include "partials/csrf.html" %}
       <div class="field">
         <label for="register-email">דוא״ל מוסדי</label>
         <input id="register-email" name="email" type="email" required placeholder="name@jct.ac.il" value="{{ form_email }}" />

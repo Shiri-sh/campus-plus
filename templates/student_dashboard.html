@@ -154,6 +154,7 @@
       <button class="btn btn-ghost" type="button" data-close-modal>סגירה</button>
     </div>
     <form class="form-stack" method="post" data-report-form>
+      {% include "partials/csrf.html" %}
       <div class="field">
         <label for="report-message">הודעה למנהל/ת</label>
         <textarea id="report-message" name="message" rows="5" required placeholder="תאר/י תוכן פגום, לא עדכני או חסר."></textarea>

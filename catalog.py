@@ -16,15 +16,26 @@ from models import (
 FILE_TYPE_ALIASES = {
     "exam": "exam",
     "exams": "exam",
+    "מבחן": "exam",
+    "מבחנים": "exam",
+    "מועד": "exam",
     "summary": "summary",
     "summaries": "summary",
+    "סיכום": "summary",
+    "סיכומים": "summary",
     "presentation": "presentation",
     "presentations": "presentation",
     "slides": "presentation",
+    "מצגת": "presentation",
+    "מצגות": "presentation",
     "exercise": "exercise",
     "exercises": "exercise",
     "quiz": "exercise",
     "quizzes": "exercise",
+    "תרגיל": "exercise",
+    "תרגילים": "exercise",
+    "תרגול": "exercise",
+    "תרגולים": "exercise",
 }
 
 

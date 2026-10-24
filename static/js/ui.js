@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
   const adminTab = document.querySelector("[data-admin-tab]");
   if (adminTab?.dataset.adminTab) {
     const target = adminTab.dataset.adminTab;
@@ -216,7 +217,11 @@ document.addEventListener("DOMContentLoaded", () => {
     spinner.classList.remove("hidden");
     confidence.classList.add("hidden");
     statusText.textContent = "מסווג את החומר שנבחר...";
-    const response = await fetch("/upload/classify", { method: "POST", body });
+    const response = await fetch("/upload/classify", {
+      method: "POST",
+      headers: csrfToken ? { "X-CSRFToken": csrfToken } : {},
+      body,
+    });
     const data = await response.json();
     if (!response.ok) {
       spinner.classList.add("hidden");

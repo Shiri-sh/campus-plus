@@ -1,0 +1,42 @@
+{
+  "name": "gmail_alert",
+  "description": "Send an email notification via Gmail SMTP. Used when a student uploads material that needs admin review.",
+  "inputSchema": {
+    "type": "object",
+    "required": ["recipient", "subject", "body"],
+    "properties": {
+      "recipient": {
+        "type": "string",
+        "format": "email",
+        "description": "Destination email address"
+      },
+      "subject": {
+        "type": "string",
+        "description": "Email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "Plain-text email body"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": ["ok", "confirmation"],
+    "properties": {
+      "ok": {
+        "type": "boolean",
+        "description": "Whether the send (or stub) completed without raising"
+      },
+      "confirmation": {
+        "type": "string",
+        "description": "Send confirmation or error detail"
+      },
+      "mode": {
+        "type": "string",
+        "enum": ["smtp", "stub", "error"],
+        "description": "smtp when mail was sent, stub when credentials are missing, error on failure"
+      }
+    }
+  }
+}
