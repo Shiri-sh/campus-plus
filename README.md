@@ -1,5 +1,7 @@
 # Campus+
 
+[![CI](https://github.com/Shiri-sh/campus-plus/actions/workflows/ci.yml/badge.svg)](https://github.com/Shiri-sh/campus-plus/actions/workflows/ci.yml)
+
 An intelligent academic materials platform for JCT students — upload, discover, and share study resources with AI-powered search and automated content moderation.
 
 ## What it does
@@ -82,6 +84,13 @@ Run the app:
 ```bash
 python app.py                    # Flask on http://127.0.0.1:5000
 python -m agent.worker           # AI worker (separate terminal)
+```
+
+Run the tests from the repo root. The suite uses an in-memory SQLite database and does not call external services. Pull requests and pushes to `main` run this same command in GitHub Actions:
+
+```bash
+source .venv/bin/activate        # Linux/macOS, if the venv is not already active
+pytest
 ```
 
 One-time data setup:

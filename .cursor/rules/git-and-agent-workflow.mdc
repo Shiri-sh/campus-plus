@@ -1,5 +1,5 @@
 ---
-description: Git safety and agent workflow for Campus+ — no commits or pushes without explicit human approval
+description: Git safety and agent workflow for Campus+ — run pytest after code changes, and no commits or pushes without explicit human approval
 alwaysApply: true
 ---
 
@@ -12,7 +12,7 @@ This repo is a three-person course project ([Campus+](https://github.com/Shiri-s
 - **Do not run `git commit`** unless the human clearly asks you to commit (in the message or a standing user rule).
 - **Do not run `git push`** unless the human clearly asks you to push.
 - If intent is unclear (“save this”, “looks good”), **ask** whether they want a commit, a push, or only local file changes.
-- After implementing work, report what changed and wait for commit/push instructions.
+- After implementing work, run the test suite (see Tests), report what changed and the pytest result, and wait for commit/push instructions.
 
 ## When the human does ask to commit
 
@@ -20,6 +20,19 @@ This repo is a three-person course project ([Campus+](https://github.com/Shiri-s
 - Use a short message that explains **why**, matching existing repo style.
 - Do not use `--no-verify`, `--amend`, or force-push unless they explicitly request it.
 - Do not push unless they also asked to push.
+
+## Tests
+
+After changes to application code, tests, or dependencies, run this from the repo root before treating the work as done:
+
+```bash
+source .venv/bin/activate
+pytest
+```
+
+- These are the same commands as in `README.md`.
+- Fix failures caused by the change before finishing.
+- Include the pass/fail result in the summary.
 
 ## Scope of agent edits
 
@@ -30,7 +43,7 @@ This repo is a three-person course project ([Campus+](https://github.com/Shiri-s
 
 ```
 Human: "Implement T2 and open a PR when done."
-→ Code changes only; do not commit or push until they say "commit" / "push" / "create the PR".
+→ Code changes only; run pytest and report the result. Do not commit or push until they say "commit" / "push" / "create the PR".
 
 Human: "Commit these changes with message X."
 → Stage relevant files, commit with message X; do not push unless they also ask.
