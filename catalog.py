@@ -1,6 +1,6 @@
 import re
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from extensions import db
 from models import (
@@ -8,10 +8,15 @@ from models import (
     FILE_TYPES,
     MATERIAL_TYPES,
     STATUS_APPROVED,
+    STATUS_PENDING,
+    STATUS_REJECTED,
     Course,
     Material,
     hebrew_year,
 )
+
+ADMIN_MATERIAL_PAGE_SIZE = 80
+ADMIN_STATUS_FILTERS = (STATUS_APPROVED, STATUS_REJECTED)
 
 FILE_TYPE_ALIASES = {
     "exam": "exam",
@@ -104,6 +109,48 @@ def approved_materials(course_id=None, year=None, material_type=None, file_type=
             material.relevance = None
 
     return materials, selected_year, selected_file_type
+
+
+def search_admin_materials(
+    query="",
+    course_id=None,
+    year=None,
+    material_type=None,
+    status=None,
+    limit=ADMIN_MATERIAL_PAGE_SIZE,
+):
+    """Approved and rejected materials for the admin materials tab.
+
+    Pending rows stay on the approvals tab. An unknown status or material
+    type is ignored so a bad query string does not hide the whole list.
+    """
+    records = Material.query.filter(Material.status != STATUS_PENDING)
+    if status in ADMIN_STATUS_FILTERS:
+        records = records.filter(Material.status == status)
+    if course_id:
+        records = records.filter(Material.course_id == course_id)
+    if year:
+        records = records.filter(Material.academic_year == year)
+    if material_type in dict(MATERIAL_TYPES):
+        records = records.filter(Material.material_type == material_type)
+
+    text = (query or "").strip()
+    if text:
+        pattern = f"%{text}%"
+        records = records.join(Course).filter(
+            or_(
+                Material.file_name.ilike(pattern),
+                Material.lecturer.ilike(pattern),
+                Course.name.ilike(pattern),
+            )
+        )
+
+    rows = (
+        records.order_by(Material.uploaded_at.desc(), Material.id.desc())
+        .limit(limit + 1)
+        .all()
+    )
+    return rows[:limit], len(rows) > limit
 
 
 def suggestion_items(query):

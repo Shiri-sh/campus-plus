@@ -8,10 +8,11 @@ from catalog import (
     explorer_options,
     parse_search_query,
     relevance_score,
+    search_admin_materials,
     suggestion_items,
 )
 from extensions import db
-from models import STATUS_APPROVED, STATUS_PENDING, Course, Material
+from models import STATUS_APPROVED, STATUS_PENDING, STATUS_REJECTED, Course, Material
 
 
 def viewed_material(
@@ -197,6 +198,115 @@ def test_suggestion_items_returns_at_most_eight(app_context):
     suggestions = suggestion_items("קובץ")
 
     assert len(suggestions) == 8
+
+
+def test_search_admin_materials_matches_a_file_name(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "newton.pdf")
+    add_material(course, "other.pdf")
+
+    materials, truncated = search_admin_materials(query="newton")
+
+    assert [item.file_name for item in materials] == ["newton.pdf"]
+    assert truncated is False
+
+
+def test_search_admin_materials_matches_a_course_name(app_context):
+    physics = add_course("פיזיקה")
+    algebra = add_course("אלגברה")
+    add_material(physics, "a.pdf")
+    add_material(algebra, "b.pdf")
+
+    materials, _truncated = search_admin_materials(query="אלג")
+
+    assert [item.file_name for item in materials] == ["b.pdf"]
+
+
+def test_search_admin_materials_matches_a_lecturer(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "a.pdf", lecturer="כהן")
+    add_material(course, "b.pdf", lecturer="לוי")
+
+    materials, _truncated = search_admin_materials(query="כהן")
+
+    assert [item.file_name for item in materials] == ["a.pdf"]
+
+
+def test_search_admin_materials_filters_rejected_and_hides_pending(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "ok.pdf", status=STATUS_APPROVED)
+    add_material(course, "no.pdf", status=STATUS_REJECTED)
+    add_material(course, "wait.pdf", status=STATUS_PENDING)
+
+    materials, _truncated = search_admin_materials(status=STATUS_REJECTED)
+
+    assert [item.file_name for item in materials] == ["no.pdf"]
+
+
+def test_search_admin_materials_ignores_an_unknown_status(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "ok.pdf", status=STATUS_APPROVED)
+    add_material(course, "no.pdf", status=STATUS_REJECTED)
+    add_material(course, "wait.pdf", status=STATUS_PENDING)
+
+    materials, _truncated = search_admin_materials(status="pending")
+
+    assert [item.file_name for item in materials] == ["no.pdf", "ok.pdf"]
+
+
+def test_search_admin_materials_applies_course_year_and_type_together(app_context):
+    physics = add_course("פיזיקה")
+    algebra = add_course("אלגברה")
+    add_material(
+        physics,
+        "match.pdf",
+        academic_year=2023,
+        material_type="exams",
+        file_type="exam",
+    )
+    add_material(
+        physics,
+        "other-year.pdf",
+        academic_year=2024,
+        material_type="exams",
+        file_type="exam",
+    )
+    add_material(
+        algebra,
+        "other-course.pdf",
+        academic_year=2023,
+        material_type="exams",
+        file_type="exam",
+    )
+
+    materials, _truncated = search_admin_materials(
+        course_id=physics.id,
+        year=2023,
+        material_type="exams",
+    )
+
+    assert [item.file_name for item in materials] == ["match.pdf"]
+
+
+def test_search_admin_materials_ignores_an_unknown_material_type(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "exam.pdf", material_type="exams", file_type="exam")
+    add_material(course, "notes.pdf")
+
+    materials, _truncated = search_admin_materials(material_type="nope")
+
+    assert [item.file_name for item in materials] == ["notes.pdf", "exam.pdf"]
+
+
+def test_search_admin_materials_reports_when_more_rows_exist(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "older.pdf", uploaded_at=date(2024, 1, 1))
+    add_material(course, "newer.pdf", uploaded_at=date(2024, 6, 1))
+
+    materials, truncated = search_admin_materials(limit=1)
+
+    assert [item.file_name for item in materials] == ["newer.pdf"]
+    assert truncated is True
 
 
 def test_explorer_options_counts_only_approved_files(app_context):
