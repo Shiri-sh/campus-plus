@@ -84,6 +84,13 @@ python app.py                    # Flask on http://127.0.0.1:5000
 python -m agent.worker           # AI worker (separate terminal)
 ```
 
+Run the tests from the repo root. The suite uses an in-memory SQLite database and does not call external services:
+
+```bash
+source .venv/bin/activate        # Linux/macOS, if the venv is not already active
+pytest
+```
+
 One-time data setup:
 
 ```bash
