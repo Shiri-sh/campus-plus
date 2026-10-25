@@ -88,3 +88,7 @@ def test_sqlite_create_all_creates_event_columns():
         "payload",
         "created_at",
     }
+
+
+def test_event_actor_id_has_no_foreign_key():
+    assert db.metadata.tables["event"].c.actor_id.foreign_keys == set()

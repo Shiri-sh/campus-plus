@@ -123,10 +123,42 @@ def _unicode_upgrade_statements(is_mssql, columns, unique_constraints=None):
     return statements
 
 
-def migration_statements(is_mssql, columns, unique_constraints=None):
+def _drop_event_actor_fk_statements(is_mssql, event_foreign_keys):
+    """Drop event.actor_id → user.id so a deleted account can leave the audit row.
+
+    SQLite does not support DROP CONSTRAINT. Local SQLite also leaves foreign
+    keys off, so only MSSQL (somee.com) needs the statement. Existing event
+    rows stay; this does not rebuild or delete the table.
+    """
+    if not is_mssql:
+        return []
+    statements = []
+    for constraint in event_foreign_keys or []:
+        columns = [name.lower() for name in constraint.get("constrained_columns") or []]
+        referred = (constraint.get("referred_table") or "").lower()
+        name = constraint.get("name")
+        if "actor_id" in columns and referred == "user" and name:
+            statements.append(f"ALTER TABLE [event] DROP CONSTRAINT [{name}]")
+    return statements
+
+
+def migration_statements(
+    is_mssql,
+    columns,
+    unique_constraints=None,
+    event_foreign_keys=None,
+):
     additions = _add_column_statements(is_mssql, columns)
     upgrades = _unicode_upgrade_statements(is_mssql, columns, unique_constraints)
-    return additions + upgrades
+    drops = _drop_event_actor_fk_statements(is_mssql, event_foreign_keys)
+    return additions + upgrades + drops
+
+
+def _event_foreign_keys():
+    inspector = db.inspect(db.engine)
+    if not inspector.has_table("event"):
+        return []
+    return inspector.get_foreign_keys("event")
 
 
 def ensure_schema():
@@ -141,7 +173,12 @@ def ensure_schema():
     if is_mssql:
         for table in columns:
             unique_constraints[table] = _unique_constraints_for(table)
-    statements = migration_statements(is_mssql, columns, unique_constraints)
+    statements = migration_statements(
+        is_mssql,
+        columns,
+        unique_constraints,
+        _event_foreign_keys(),
+    )
     if not statements:
         return
     with db.engine.begin() as connection:

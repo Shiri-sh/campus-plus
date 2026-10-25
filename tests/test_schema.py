@@ -190,6 +190,38 @@ def test_complete_schema_needs_no_statements(is_mssql):
     assert statements == []
 
 
+def test_drops_event_actor_foreign_key_on_mssql():
+    statements = migration_statements(
+        True,
+        complete_columns(),
+        event_foreign_keys=[
+            {
+                "name": "FK_event_actor_id_user",
+                "constrained_columns": ["actor_id"],
+                "referred_table": "user",
+            }
+        ],
+    )
+
+    assert statements == ["ALTER TABLE [event] DROP CONSTRAINT [FK_event_actor_id_user]"]
+
+
+def test_sqlite_does_not_emit_a_drop_constraint_for_event_actor():
+    statements = migration_statements(
+        False,
+        complete_columns(),
+        event_foreign_keys=[
+            {
+                "name": "fk_event_actor_id",
+                "constrained_columns": ["actor_id"],
+                "referred_table": "user",
+            }
+        ],
+    )
+
+    assert statements == []
+
+
 def test_sqlite_does_not_rewrite_varchar_file_name():
     columns = columns_with("material", "file_name", "VARCHAR")
 

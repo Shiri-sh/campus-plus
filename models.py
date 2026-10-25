@@ -183,7 +183,10 @@ class Event(db.Model):
     event_type = db.Column(db.String(60), nullable=False)
     entity_type = db.Column(db.String(40), nullable=False)
     entity_id = db.Column(db.Integer, nullable=False)
-    actor_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    # No foreign key: the audit row must keep this id after the user is deleted.
+    # ON DELETE SET NULL / CASCADE would update or remove the row, which the
+    # append-only listeners reject.
+    actor_id = db.Column(db.Integer)
     # NVARCHAR so Hebrew values inside the JSON survive MSSQL.
     payload = db.Column(db.UnicodeText)
     created_at = db.Column(db.DateTime, nullable=False, default=_utc_now)

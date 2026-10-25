@@ -4,13 +4,34 @@ import pytest
 from flask import current_app
 
 from commands.materials import (
+    approve_material,
     confirm_pending_upload,
     delete_material,
     notify_admins_of_pending_upload,
+    reject_material,
     remove_stored_upload,
+    update_material,
+)
+from events import (
+    MATERIAL_APPROVED,
+    MATERIAL_DELETED,
+    MATERIAL_REJECTED,
+    MATERIAL_UPDATED,
+    MATERIAL_UPLOADED,
 )
 from extensions import db
-from models import ADMIN, STATUS_PENDING, STUDENT, Course, Material, Report, User
+from models import (
+    ADMIN,
+    STATUS_APPROVED,
+    STATUS_PENDING,
+    STATUS_REJECTED,
+    STUDENT,
+    Course,
+    Event,
+    Material,
+    Report,
+    User,
+)
 
 
 def add_course(name="פיזיקה"):
@@ -230,6 +251,9 @@ def test_confirm_pending_upload_stores_a_pending_row(app_context, prediction, re
     assert material.file_path == "stored.pdf"
     assert material.ai_recommendation == recommendation
     assert Material.query.count() == 1
+    event = Event.query.filter_by(event_type=MATERIAL_UPLOADED).one()
+    assert event.entity_id == material.id
+    assert event.actor_id is None
 
 
 def test_confirm_pending_upload_stores_a_video_link(app_context):
@@ -311,11 +335,14 @@ def test_delete_material_removes_the_row_its_reports_and_the_file(app_context, t
     material_id = material.id
     (tmp_path / "gone.pdf").write_text("data")
 
-    delete_material(material)
+    delete_material(material_id, student.id)
 
     assert db.session.get(Material, material_id) is None
     assert Report.query.count() == 0
     assert not (tmp_path / "gone.pdf").exists()
+    event = Event.query.filter_by(event_type=MATERIAL_DELETED).one()
+    assert event.entity_id == material_id
+    assert event.actor_id == student.id
 
 
 def test_delete_material_leaves_a_remote_file_alone(app_context, tmp_path):
@@ -329,7 +356,76 @@ def test_delete_material_leaves_a_remote_file_alone(app_context, tmp_path):
     kept = tmp_path / "preview"
     kept.write_text("keep")
 
-    delete_material(material)
+    delete_material(material.id, None)
 
     assert db.session.get(Material, material_id) is None
     assert kept.read_text() == "keep"
+    assert Event.query.filter_by(event_type=MATERIAL_DELETED).count() == 1
+
+
+def test_approve_and_reject_record_the_actor(app_context):
+    course = add_course()
+    admin = add_user("admin@jct.ac.il", ADMIN)
+    material = add_material(course)
+
+    approved = approve_material(material.id, admin.id)
+    assert approved.status == STATUS_APPROVED
+    approved_event = Event.query.filter_by(event_type=MATERIAL_APPROVED).one()
+    assert approved_event.actor_id == admin.id
+    assert approved_event.entity_id == material.id
+
+    rejected = reject_material(material.id, admin.id)
+    assert rejected.status == STATUS_REJECTED
+    rejected_event = Event.query.filter_by(event_type=MATERIAL_REJECTED).one()
+    assert rejected_event.actor_id == admin.id
+
+
+def test_update_material_writes_fields_and_an_event(app_context):
+    course = add_course()
+    other = add_course("אלגברה")
+    admin = add_user("admin@jct.ac.il", ADMIN)
+    material = add_material(course)
+
+    updated = update_material(
+        material.id,
+        admin.id,
+        file_name="  מבחן.pdf  ",
+        course_id=other.id,
+        academic_year=2023,
+        material_type="exams",
+        lecturer="  ד\"ר כהן  ",
+    )
+
+    assert updated.file_name == "מבחן.pdf"
+    assert updated.course_id == other.id
+    assert updated.academic_year == 2023
+    assert updated.material_type == "exams"
+    assert updated.file_type == "exam"
+    assert updated.lecturer == "ד\"ר כהן"
+    event = Event.query.filter_by(event_type=MATERIAL_UPDATED).one()
+    assert event.actor_id == admin.id
+    assert event.entity_id == material.id
+
+
+def test_update_material_keeps_the_file_name_when_the_form_is_blank(app_context):
+    course = add_course()
+    admin = add_user("admin@jct.ac.il", ADMIN)
+    material = add_material(course, file_name="סיכום.pdf")
+
+    updated = update_material(
+        material.id,
+        admin.id,
+        file_name="   ",
+        course_id=course.id,
+        academic_year=2024,
+        material_type="summaries",
+        lecturer="",
+    )
+
+    assert updated.file_name == "סיכום.pdf"
+    assert updated.lecturer is None
+
+
+def test_material_commands_reject_a_missing_row(app_context):
+    with pytest.raises(LookupError):
+        approve_material(999, None)
