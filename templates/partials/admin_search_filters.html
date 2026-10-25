@@ -1,0 +1,3 @@
+{% for key, value in material_filters.items() if value %}
+<input type="hidden" name="{{ key }}" value="{{ value }}" />
+{% endfor %}

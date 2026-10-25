@@ -835,6 +835,24 @@ tr:last-child td {
   margin-top: 12px;
 }
 
+.materials-search {
+  margin-bottom: 8px;
+}
+
+.materials-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+  align-items: end;
+}
+
+.materials-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* Modal */
 .modal {
   position: fixed;

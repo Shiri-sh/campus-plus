@@ -4,6 +4,7 @@ from flask import abort, current_app, flash, jsonify, redirect, render_template,
 from flask_login import current_user
 from sqlalchemy import func
 
+from catalog import search_admin_materials
 from commands.materials import (
     approve_material as approve_material_record,
     delete_material as delete_material_record,
@@ -18,12 +19,16 @@ from models import (
     ACADEMIC_YEARS,
     MATERIAL_TYPES,
     STATUS_APPROVED,
+    STATUS_LABELS,
     STATUS_PENDING,
+    STATUS_REJECTED,
     Course,
     Material,
     Report,
     User,
 )
+
+MATERIAL_FILTER_KEYS = ("q", "course", "year", "type", "status")
 
 
 def recommendation_for(material):
@@ -34,6 +39,40 @@ def recommendation_for(material):
 
 def admin_redirect(tab):
     return redirect(url_for("admin", tab=tab))
+
+
+def _optional_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def material_filters_from_request():
+    material_type = request.args.get("type") or ""
+    if material_type not in dict(MATERIAL_TYPES):
+        material_type = ""
+    status = request.args.get("status") or ""
+    if status not in (STATUS_APPROVED, STATUS_REJECTED):
+        status = ""
+    course_id = _optional_int(request.args.get("course"))
+    year = _optional_int(request.args.get("year"))
+    return {
+        "q": (request.args.get("q") or "").strip(),
+        "course": "" if course_id is None else str(course_id),
+        "year": "" if year is None else str(year),
+        "type": material_type,
+        "status": status,
+    }
+
+
+def materials_redirect():
+    filters = {}
+    for key in MATERIAL_FILTER_KEYS:
+        value = (request.form.get(key) or "").strip()
+        if value:
+            filters[key] = value
+    return redirect(url_for("admin", tab="materials", **filters))
 
 
 def register_admin_routes(app, role_required, material_payload):
@@ -65,11 +104,14 @@ def register_admin_routes(app, role_required, material_payload):
             .limit(8)
             .all()
         )
-        search = (request.args.get("q") or "").strip()
-        materials = Material.query.filter(Material.status != STATUS_PENDING)
-        if search:
-            materials = materials.filter(Material.file_name.ilike(f"%{search}%"))
-        materials = materials.order_by(Material.uploaded_at.desc()).limit(80).all()
+        filters = material_filters_from_request()
+        materials, materials_truncated = search_admin_materials(
+            query=filters["q"],
+            course_id=int(filters["course"]) if filters["course"] else None,
+            year=int(filters["year"]) if filters["year"] else None,
+            material_type=filters["type"] or None,
+            status=filters["status"] or None,
+        )
 
         return render_template(
             "admin.html",
@@ -78,10 +120,16 @@ def register_admin_routes(app, role_required, material_payload):
             reports=reports,
             users=users,
             materials=materials,
-            material_search=search,
+            materials_truncated=materials_truncated,
+            material_filters=filters,
+            filters_active=any(filters.values()),
             courses=Course.query.order_by(Course.name).all(),
             years=ACADEMIC_YEARS,
             material_types=MATERIAL_TYPES,
+            status_filters=(
+                (STATUS_APPROVED, STATUS_LABELS[STATUS_APPROVED]),
+                (STATUS_REJECTED, STATUS_LABELS[STATUS_REJECTED]),
+            ),
             pending_count=len(pending),
             open_report_count=Report.query.filter_by(status="open").count(),
             active_course_count=len(distribution),
@@ -133,11 +181,11 @@ def register_admin_routes(app, role_required, material_payload):
             academic_year = int(request.form.get("academic_year"))
         except (TypeError, ValueError):
             flash("יש לבחור קורס ושנה תקפים.", "error")
-            return admin_redirect("materials")
+            return materials_redirect()
         material_type = request.form.get("material_type")
         if material_type not in dict(MATERIAL_TYPES):
             flash("יש לבחור סוג חומר תקף.", "error")
-            return admin_redirect("materials")
+            return materials_redirect()
         material = update_material_record(
             material.id,
             current_user.id,
@@ -148,7 +196,7 @@ def register_admin_routes(app, role_required, material_payload):
             lecturer=request.form.get("lecturer"),
         )
         flash(f"עודכן: {material.file_name}.", "success")
-        return admin_redirect("materials")
+        return materials_redirect()
 
     @app.route("/admin/materials/<int:material_id>/delete", methods=["POST"])
     @role_required(ADMIN)
@@ -156,7 +204,7 @@ def register_admin_routes(app, role_required, material_payload):
         material = admin_material(material_id)
         delete_material_record(material.id, current_user.id)
         flash("החומר נמחק.", "success")
-        return admin_redirect("materials")
+        return materials_redirect()
 
     @app.route("/admin/reports/<int:report_id>/reply", methods=["POST"])
     @role_required(ADMIN)

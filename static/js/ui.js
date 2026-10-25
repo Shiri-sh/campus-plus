@@ -11,6 +11,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  document.querySelectorAll("[data-omit-empty]").forEach((form) => {
+    form.addEventListener("submit", () => {
+      form.querySelectorAll("input, select").forEach((field) => {
+        if (field.type === "hidden" || field.value.trim()) {
+          return;
+        }
+        field.disabled = true;
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-submit-on-change]").forEach((control) => {
+    control.addEventListener("change", () => {
+      control.form?.requestSubmit();
+    });
+  });
+
   document.querySelectorAll("[data-tab-target]").forEach((button) => {
     button.addEventListener("click", () => {
       const group = button.dataset.tabGroup;
