@@ -197,17 +197,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const previewBox = document.querySelector("[data-ai-preview]");
   const statusText = document.querySelector("[data-classify-status]");
   const spinner = document.querySelector("[data-classify-spinner]");
-  const confidence = document.querySelector("[data-confidence]");
-  const confidenceInput = document.querySelector("[data-confidence-input]");
   const fileNameLabel = document.querySelector("[data-upload-name]");
 
   const showPrediction = (data) => {
     document.getElementById("predicted-course").value = String(data.course_id);
     document.getElementById("predicted-year").value = String(data.academic_year);
     document.getElementById("predicted-type").value = data.material_type;
-    confidenceInput.value = `${data.confidence}%`;
-    confidence.textContent = `ביטחון ${data.confidence}%`;
-    confidence.classList.remove("hidden");
     spinner.classList.add("hidden");
     statusText.textContent = "אשר/י את הסיווג המוצע או ערוך/י אותו ידנית.";
   };
@@ -215,7 +210,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const classifyUpload = async (body) => {
     previewBox.classList.remove("hidden");
     spinner.classList.remove("hidden");
-    confidence.classList.add("hidden");
     statusText.textContent = "מסווג את החומר שנבחר...";
     const response = await fetch("/upload/classify", {
       method: "POST",

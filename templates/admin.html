@@ -64,7 +64,6 @@
             <th>שם קובץ</th>
             <th>תאריך העלאה</th>
             <th>קורס משוער</th>
-            <th>ציון ביטחון</th>
             <th>המלצת AI</th>
             <th>פעולות</th>
           </tr>
@@ -72,10 +71,9 @@
         <tbody>
           {% for material in pending %}
             <tr>
-              <td>{{ material.file_name }}</td>
+              <td><bdi>{{ material.file_name }}</bdi></td>
               <td>{{ material.uploaded_at.strftime("%d/%m/%Y") }}</td>
               <td>{{ material.course.name }}</td>
-              <td>{% if material.confidence is not none %}{{ material.confidence }}%{% else %}—{% endif %}</td>
               <td>
                 <span class="rec {% if material.ai_recommendation == 'reject' %}rec-reject{% else %}rec-approve{% endif %}">
                   {{ material.recommendation_label }}
@@ -108,7 +106,7 @@
       {% for report in reports %}
         <article class="report-item">
           <div>
-            <h3>{{ report.material.file_name }}</h3>
+            <h3><bdi>{{ report.material.file_name }}</bdi></h3>
             <p><strong>{{ report.reporter.email }}</strong> · {{ report.created_at.strftime("%d/%m/%Y %H:%M") }} · {{ report.status }}</p>
             <p>{{ report.message }}</p>
             {% if report.admin_reply %}
@@ -172,13 +170,13 @@
       {% for material in materials %}
         <article class="report-item">
           <div>
-            <h3>{{ material.file_name }}</h3>
+            <h3><bdi>{{ material.file_name }}</bdi></h3>
             <p>{{ material.course.name }} · {{ hebrew_year(material.academic_year) }} · {{ material.material_type_label }} · {{ material.status }}</p>
             <form class="prediction-grid" action="{{ url_for('update_material', material_id=material.id) }}" method="post">
               {% include "partials/csrf.html" %}
               <div class="field">
                 <label for="name-{{ material.id }}">שם קובץ</label>
-                <input id="name-{{ material.id }}" name="file_name" value="{{ material.file_name }}" />
+                <input id="name-{{ material.id }}" name="file_name" dir="auto" value="{{ material.file_name }}" />
               </div>
               <div class="field">
                 <label for="course-{{ material.id }}">קורס</label>
@@ -231,7 +229,7 @@
 <div class="modal" id="admin-preview-modal">
   <div class="modal-card">
     <div class="modal-head">
-      <h2 data-modal-name>תצוגה מקדימה</h2>
+      <h2 data-modal-name dir="auto">תצוגה מקדימה</h2>
       <button class="btn btn-ghost" type="button" data-close-modal>סגירה</button>
     </div>
     <div class="preview-frame" data-preview-frame>לא קיים קובץ שמור לרשומה זו.</div>

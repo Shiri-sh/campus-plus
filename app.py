@@ -21,7 +21,6 @@ from flask import (
 )
 from flask_login import current_user, login_required, login_user, logout_user
 from flask_wtf.csrf import CSRFError
-from werkzeug.utils import secure_filename
 
 from catalog import approved_materials, explorer_options, suggestion_items
 from classify import ICON_BY_EXTENSION, classify_source
@@ -396,6 +395,19 @@ def stored_upload_name(filename):
     return f"{uuid.uuid4().hex}{suffix}"
 
 
+def display_upload_name(filename):
+    """Keep the student's title, including Hebrew.
+
+    The file on disk uses a separate uuid name, so this value is only stored
+    and shown. Werkzeug's secure_filename drops every non-ASCII character.
+    """
+    raw = (filename or "").replace("\\", "/").replace("\x00", "")
+    name = raw.split("/")[-1]
+    name = "".join(char for char in name if char.isprintable())
+    name = " ".join(name.split()).strip(" .")
+    return name[:255]
+
+
 def is_video_link(value):
     parsed = urlparse(value or "")
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
@@ -427,7 +439,7 @@ def classify_upload():
             return jsonify({"error": "יש להעלות PDF, מצגת או מסמך."}), 400
         saved_name = stored_upload_name(uploaded.filename)
         uploaded.save(os.path.join(app.config["UPLOAD_FOLDER"], saved_name))
-        original_name = secure_filename(uploaded.filename) or saved_name
+        original_name = display_upload_name(uploaded.filename) or saved_name
         session["pending_upload"] = {
             "stored_name": saved_name,
             "original_name": original_name,

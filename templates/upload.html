@@ -16,7 +16,7 @@
       <input id="video-link" type="url" name="video_link" placeholder="https://" data-video-link />
     </div>
     <button class="btn btn-ghost" type="button" data-classify-link>סיווג קישור לסרטון</button>
-    <p class="field-hint" data-upload-name></p>
+    <p class="field-hint" data-upload-name dir="auto"></p>
   </section>
 
   <section class="ai-preview hidden" data-ai-preview>
@@ -27,7 +27,6 @@
       </div>
       <div class="file-actions">
         <span class="spinner hidden" data-classify-spinner aria-hidden="true"></span>
-        <span class="score hidden" data-confidence></span>
       </div>
     </header>
 
@@ -57,10 +56,6 @@
               <option value="{{ value }}">{{ label }}</option>
             {% endfor %}
           </select>
-        </div>
-        <div class="field">
-          <label for="predicted-confidence">רמת ביטחון</label>
-          <input id="predicted-confidence" data-confidence-input value="" readonly />
         </div>
       </div>
       <div class="file-actions">

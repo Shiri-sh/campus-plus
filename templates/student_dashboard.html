@@ -76,7 +76,7 @@
             <div class="file-top">
               <div class="file-icon {{ material.icon_type }}">{{ material.icon_label }}</div>
               <div>
-                <h3>{{ material.file_name }}</h3>
+                <h3><bdi>{{ material.file_name }}</bdi></h3>
                 <p>{{ material.file_type_label }} · הועלה {{ material.uploaded_at.strftime("%d/%m/%Y") }}</p>
                 {% if material.relevance is not none %}
                   <span class="score">רלוונטיות {{ material.relevance }}%</span>
@@ -114,7 +114,7 @@
 <div class="modal" id="item-modal">
   <div class="modal-card">
     <div class="modal-head">
-      <h2 data-modal-name>חומר</h2>
+      <h2 data-modal-name dir="auto">חומר</h2>
       <button class="btn btn-ghost" type="button" data-close-modal>סגירה</button>
     </div>
     <div class="preview-frame" data-preview-frame>לא קיים קובץ שמור לרשומה זו.</div>

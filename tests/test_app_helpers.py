@@ -65,6 +65,25 @@ def test_is_video_link_requires_http_and_a_host(value, expected):
     assert is_link is expected
 
 
+@pytest.mark.parametrize(
+    ("filename", "expected"),
+    [
+        ("סיכום 2_1.pdf", "סיכום 2_1.pdf"),
+        ("notes.pdf", "notes.pdf"),
+        ("folder/סיכום.pdf", "סיכום.pdf"),
+        ("..\\..\\סיכום.pdf", "סיכום.pdf"),
+        ("  סיכום.pdf  ", "סיכום.pdf"),
+        ("a\x00b.pdf", "ab.pdf"),
+        ("", ""),
+        (None, ""),
+        ("...", ""),
+        ("ח" * 300 + ".pdf", ("ח" * 300 + ".pdf")[:255]),
+    ],
+)
+def test_display_upload_name_keeps_hebrew_and_drops_paths(filename, expected):
+    assert campus_app.display_upload_name(filename) == expected
+
+
 def test_stored_upload_name_keeps_a_lowercased_suffix(monkeypatch):
     monkeypatch.setattr(campus_app.uuid, "uuid4", lambda: SimpleNamespace(hex="abc123"))
 
