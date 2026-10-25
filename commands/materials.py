@@ -5,13 +5,23 @@ from pathlib import Path
 from flask import current_app
 
 from classify import MATERIAL_TO_FILE_TYPE
+from events import (
+    MATERIAL_APPROVED,
+    MATERIAL_DELETED,
+    MATERIAL_REJECTED,
+    MATERIAL_UPDATED,
+    MATERIAL_UPLOADED,
+    record_event,
+)
 from extensions import db
 from mcp_tools.gmail_alert import call_tool
 from models import (
     ACADEMIC_YEARS,
     ADMIN,
     MATERIAL_TYPES,
+    STATUS_APPROVED,
     STATUS_PENDING,
+    STATUS_REJECTED,
     Course,
     Material,
     Report,
@@ -85,6 +95,18 @@ def confirm_pending_upload(
     )
     db.session.add(material)
     db.session.commit()
+    record_event(
+        MATERIAL_UPLOADED,
+        "Material",
+        material.id,
+        actor_id=uploader_id,
+        payload={
+            "file_name": material.file_name,
+            "course_id": material.course_id,
+            "academic_year": material.academic_year,
+            "material_type": material.material_type,
+        },
+    )
     if not already_notified:
         try:
             notify_admins_of_pending_upload(material, admin_approvals_url)
@@ -115,10 +137,76 @@ def remove_stored_upload(file_path, upload_folder=None):
         logger.warning("Could not remove stored upload %s: %s", file_path, error)
 
 
-def delete_material(material):
+def _require_material(material_id):
+    material = db.session.get(Material, material_id)
+    if material is None:
+        raise LookupError(f"material {material_id} not found")
+    return material
+
+
+def _record_material_event(event_type, material, actor_id):
+    record_event(
+        event_type,
+        "Material",
+        material.id,
+        actor_id=actor_id,
+        payload={"file_name": material.file_name, "status": material.status},
+    )
+
+
+def approve_material(material_id, actor_id):
+    material = _require_material(material_id)
+    material.status = STATUS_APPROVED
+    db.session.commit()
+    _record_material_event(MATERIAL_APPROVED, material, actor_id)
+    return material
+
+
+def reject_material(material_id, actor_id):
+    material = _require_material(material_id)
+    material.status = STATUS_REJECTED
+    db.session.commit()
+    _record_material_event(MATERIAL_REJECTED, material, actor_id)
+    return material
+
+
+def update_material(
+    material_id,
+    actor_id,
+    *,
+    file_name,
+    course_id,
+    academic_year,
+    material_type,
+    lecturer,
+):
+    material = _require_material(material_id)
+    if material_type not in dict(MATERIAL_TYPES):
+        raise ValueError("invalid material type")
+    cleaned_name = (file_name or "").strip()
+    material.file_name = cleaned_name or material.file_name
+    material.course_id = course_id
+    material.academic_year = academic_year
+    material.material_type = material_type
+    material.file_type = MATERIAL_TO_FILE_TYPE[material_type]
+    material.lecturer = (lecturer or "").strip() or None
+    db.session.commit()
+    _record_material_event(MATERIAL_UPDATED, material, actor_id)
+    return material
+
+
+def delete_material(material_id, actor_id):
+    material = _require_material(material_id)
     file_path = material.file_path
+    file_name = material.file_name
     Report.query.filter_by(material_id=material.id).delete()
     db.session.delete(material)
     db.session.commit()
+    record_event(
+        MATERIAL_DELETED,
+        "Material",
+        material_id,
+        actor_id=actor_id,
+        payload={"file_name": file_name},
+    )
     remove_stored_upload(file_path)
-    return material

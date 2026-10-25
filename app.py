@@ -26,6 +26,8 @@ from werkzeug.utils import secure_filename
 from catalog import approved_materials, explorer_options, suggestion_items
 from classify import ICON_BY_EXTENSION, classify_source
 from commands.materials import confirm_pending_upload
+from commands.reports import create_report
+from commands.users import register_user
 from db_config import resolve_database_url
 from extensions import csrf, db, login_manager
 from models import (
@@ -38,7 +40,6 @@ from models import (
     STUDENT,
     Course,
     Material,
-    Report,
     User,
     hebrew_year,
 )
@@ -192,11 +193,7 @@ def register():
         flash("כתובת דוא״ל מוסדית זו כבר רשומה במערכת.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
-    user = User(email=email, role=role)
-    user.set_password(password)
-    user.last_login_at = datetime.utcnow()
-    db.session.add(user)
-    db.session.commit()
+    user = register_user(email, password, role)
     login_user(user)
     return redirect(home_for(user))
 
@@ -389,15 +386,7 @@ def report_material(material_id):
         flash("יש לכתוב הודעה למנהל/ת.", "error")
         return redirect(url_for("student_dashboard"))
 
-    report = Report(
-        material_id=material.id,
-        reporter_id=current_user.id,
-        message=message,
-        created_at=datetime.utcnow(),
-        status="open",
-    )
-    db.session.add(report)
-    db.session.commit()
+    create_report(material.id, current_user.id, message)
     flash("הדיווח נשלח למנהל/ת.", "success")
     return redirect(url_for("student_dashboard"))
 

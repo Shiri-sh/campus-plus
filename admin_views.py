@@ -1,13 +1,17 @@
-from datetime import datetime
-
 from pathlib import Path
 
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_from_directory, url_for
 from flask_login import current_user
 from sqlalchemy import func
 
-from classify import MATERIAL_TO_FILE_TYPE
-from commands.materials import delete_material as delete_material_record
+from commands.materials import (
+    approve_material as approve_material_record,
+    delete_material as delete_material_record,
+    reject_material as reject_material_record,
+    update_material as update_material_record,
+)
+from commands.reports import reply_to_report
+from commands.users import delete_user as delete_user_record, set_blocked
 from extensions import db
 from models import (
     ADMIN,
@@ -15,7 +19,6 @@ from models import (
     MATERIAL_TYPES,
     STATUS_APPROVED,
     STATUS_PENDING,
-    STATUS_REJECTED,
     Course,
     Material,
     Report,
@@ -109,8 +112,7 @@ def register_admin_routes(app, role_required, material_payload):
     @role_required(ADMIN)
     def approve_material(material_id):
         material = admin_material(material_id)
-        material.status = STATUS_APPROVED
-        db.session.commit()
+        approve_material_record(material.id, current_user.id)
         flash(f"אושר: {material.file_name}.", "success")
         return admin_redirect("approvals")
 
@@ -118,8 +120,7 @@ def register_admin_routes(app, role_required, material_payload):
     @role_required(ADMIN)
     def reject_material(material_id):
         material = admin_material(material_id)
-        material.status = STATUS_REJECTED
-        db.session.commit()
+        reject_material_record(material.id, current_user.id)
         flash(f"נדחה: {material.file_name}.", "success")
         return admin_redirect("approvals")
 
@@ -137,13 +138,15 @@ def register_admin_routes(app, role_required, material_payload):
         if material_type not in dict(MATERIAL_TYPES):
             flash("יש לבחור סוג חומר תקף.", "error")
             return admin_redirect("materials")
-        material.file_name = (request.form.get("file_name") or material.file_name).strip()
-        material.course_id = course_id
-        material.academic_year = academic_year
-        material.material_type = material_type
-        material.file_type = MATERIAL_TO_FILE_TYPE[material_type]
-        material.lecturer = (request.form.get("lecturer") or "").strip() or None
-        db.session.commit()
+        material = update_material_record(
+            material.id,
+            current_user.id,
+            file_name=request.form.get("file_name"),
+            course_id=course_id,
+            academic_year=academic_year,
+            material_type=material_type,
+            lecturer=request.form.get("lecturer"),
+        )
         flash(f"עודכן: {material.file_name}.", "success")
         return admin_redirect("materials")
 
@@ -151,7 +154,7 @@ def register_admin_routes(app, role_required, material_payload):
     @role_required(ADMIN)
     def delete_material(material_id):
         material = admin_material(material_id)
-        delete_material_record(material)
+        delete_material_record(material.id, current_user.id)
         flash("החומר נמחק.", "success")
         return admin_redirect("materials")
 
@@ -165,10 +168,7 @@ def register_admin_routes(app, role_required, material_payload):
         if not reply:
             flash("יש לכתוב תגובה לפני שליחה.", "error")
             return admin_redirect("reports")
-        report.admin_reply = reply
-        report.replied_at = datetime.utcnow()
-        report.status = "answered"
-        db.session.commit()
+        reply_to_report(report.id, current_user.id, reply)
         flash(
             f"התגובה נשמרה עבור {report.reporter.email}. Gmail MCP עדיין לא מחובר — לא נשלח דוא״ל.",
             "success",
@@ -182,8 +182,7 @@ def register_admin_routes(app, role_required, material_payload):
         if user is None or user.id == current_user.id:
             flash("לא ניתן לחסום חשבון זה.", "error")
             return admin_redirect("users")
-        user.is_blocked = not user.is_blocked
-        db.session.commit()
+        user = set_blocked(user.id, current_user.id, not user.is_blocked)
         flash(
             f"{'נחסם' if user.is_blocked else 'בוטלה חסימת'} {user.email}.",
             "success",
@@ -200,9 +199,6 @@ def register_admin_routes(app, role_required, material_payload):
         if user.role == ADMIN and User.query.filter_by(role=ADMIN).count() <= 1:
             flash("לא ניתן למחוק את המנהל/ת האחרון/ה.", "error")
             return admin_redirect("users")
-        Report.query.filter_by(reporter_id=user.id).delete()
-        Material.query.filter_by(uploader_id=user.id).update({"uploader_id": None})
-        db.session.delete(user)
-        db.session.commit()
+        delete_user_record(user.id, current_user.id)
         flash("המשתמש/ת נמחק/ה.", "success")
         return admin_redirect("users")
