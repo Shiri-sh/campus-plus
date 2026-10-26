@@ -5,7 +5,7 @@ import pytest
 from commands.reports import create_report, reply_to_report
 from events import REPORT_CREATED, REPORT_REPLIED
 from extensions import db
-from models import STATUS_APPROVED, STUDENT, Course, Event, Material, Report, User
+from models import ADMIN, STATUS_APPROVED, STUDENT, Course, Event, Material, Report, User
 
 
 def add_material():
@@ -33,6 +33,45 @@ def add_student(email="student@jct.ac.il"):
     db.session.add(user)
     db.session.commit()
     return user
+
+
+def test_create_report_emails_unblocked_admins(app_context, monkeypatch):
+    material = add_material()
+    student = add_student()
+    admin = User(email="admin@jct.ac.il", password_hash="hash", role=ADMIN)
+    blocked = User(email="blocked@jct.ac.il", password_hash="hash", role=ADMIN, is_blocked=True)
+    db.session.add_all([admin, blocked])
+    db.session.commit()
+    sent = []
+    monkeypatch.setattr(
+        "commands.reports.call_tool",
+        lambda recipient, subject, body: sent.append((recipient, subject, body)) or {"ok": True},
+    )
+
+    create_report(material.id, student.id, "הקובץ לא נפתח", admin_reports_url="https://example.com/admin?tab=reports")
+
+    assert [item[0] for item in sent] == ["admin@jct.ac.il"]
+    assert "סיכום.pdf" in sent[0][1]
+    assert "הקובץ לא נפתח" in sent[0][2]
+    assert "https://example.com/admin?tab=reports" in sent[0][2]
+
+
+def test_create_report_keeps_the_row_when_gmail_fails(app_context, monkeypatch):
+    material = add_material()
+    student = add_student()
+    admin = User(email="admin@jct.ac.il", password_hash="hash", role=ADMIN)
+    db.session.add(admin)
+    db.session.commit()
+
+    def boom(recipient, subject, body):
+        raise RuntimeError("smtp down")
+
+    monkeypatch.setattr("commands.reports.call_tool", boom)
+
+    report = create_report(material.id, student.id, "הקובץ לא נפתח")
+
+    assert Report.query.count() == 1
+    assert report.status == "open"
 
 
 def test_create_report_stores_an_open_report_and_an_event(app_context):

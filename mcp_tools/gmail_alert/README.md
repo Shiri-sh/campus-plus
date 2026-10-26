@@ -1,6 +1,6 @@
 # gmail_alert — MCP Tool #2
 
-Sends a plain-text email. Campus+ calls this after a student upload is saved as `pending`, so administrators can review it.
+Sends a plain-text email. Campus+ calls this after a student upload is saved as `pending`, and after a student files a content report.
 
 ## Schemas
 
