@@ -288,6 +288,14 @@ def admin_reports():
     return Report.query.order_by(Report.created_at.desc()).all()
 
 
+def student_reports(reporter_id):
+    return (
+        Report.query.filter_by(reporter_id=reporter_id)
+        .order_by(Report.created_at.desc())
+        .all()
+    )
+
+
 def open_report_count():
     return Report.query.filter_by(status="open").count()
 

@@ -27,6 +27,7 @@ from catalog import (
     approved_years_for_course,
     course_id_for_name,
     explorer_options,
+    student_reports,
     suggestion_items,
 )
 from classify import ICON_BY_EXTENSION, classify_source
@@ -391,7 +392,16 @@ def report_material(material_id):
         admin_reports_url=url_for("admin", tab="reports", _external=True),
     )
     flash("הדיווח נשלח למנהל/ת.", "success")
-    return redirect(url_for("student_dashboard"))
+    return redirect(url_for("student_report_inbox"))
+
+
+@app.route("/student/reports")
+@role_required(STUDENT)
+def student_report_inbox():
+    return render_template(
+        "student_reports.html",
+        reports=student_reports(current_user.id),
+    )
 
 
 def stored_upload_name(filename):

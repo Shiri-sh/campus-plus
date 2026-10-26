@@ -10,6 +10,7 @@ An intelligent academic materials platform for JCT students — upload, discover
 - **Hybrid search** — `catalog.approved_materials` and `/student/suggest` run SQL keyword matching and Chroma semantic hits together, then merge by material id. Course, year, and type filters apply to both sides. If Chroma or Gemini is unavailable, keyword results still return.
 - **AI summaries in item details** — the student modal shows the worker summary and confidence when present, or "אין סיכום AI זמין" for seed rows that were never evaluated.
 - **Scoped student search** — header search and file-type chips keep the open course, year, and material type.
+- **Report inbox** — students can open `/student/reports` to see status and admin replies.
 - **AI content agent** — a background worker evaluates every new upload: extracts text, verifies relevance via Tavily, generates a summary, and recommends approve/reject to admins
 - **Upload with live classification** — students upload files and get instant course/type predictions before submitting
 - **Admin dashboard** — KPI cards, pending approval queue, content reports, and user management in one view
