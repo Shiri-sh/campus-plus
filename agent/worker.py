@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_POLL_SECONDS = 30
 SUMMARY_MODEL = os.environ.get("GEMINI_SUMMARY_MODEL") or "gemini-2.0-flash"
+EMBED_QUERY_CHARS = 4000
 
 
 def create_app():
@@ -51,6 +52,8 @@ def create_app():
 
 
 def pending_unevaluated():
+    # Upload already writes keyword confidence; empty ai_summary means the
+    # worker has not evaluated the file yet.
     return (
         Material.query.filter(
             Material.status == STATUS_PENDING,
@@ -126,18 +129,18 @@ def combined_confidence(similarity, tavily_payload, keyword):
 
 def evaluate_material(material, upload_folder):
     text = extract_text(material, upload_folder)
-    query = " ".join(
+    identity = " ".join(
         part
         for part in (
             material.course.name if material.course else "",
             material.file_name,
-            text[:500],
         )
         if part
     )
-    hits = query_similar(query or material.file_name, top_k=5)
+    embed_query = (text[:EMBED_QUERY_CHARS].strip() or identity or material.file_name)
+    hits = query_similar(embed_query, top_k=5)
     nearest = hits[0]["distance"] if hits else None
-    tavily_payload = tavily_search(query or material.file_name)
+    tavily_payload = tavily_search(identity or material.file_name)
     try:
         keyword = classify_source(text or material.file_name).get("confidence")
     except Exception:
