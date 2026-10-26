@@ -72,6 +72,27 @@ def test_combined_confidence_averages_the_three_signals():
     assert score == 83
 
 
+def test_evaluate_material_embeds_extracted_text(app_context, monkeypatch, tmp_path):
+    queries = []
+    course = add_course()
+    material = add_material(course, "notes.pdf")
+    monkeypatch.setattr("agent.worker.extract_text", lambda *args: "חוק ניוטון")
+    monkeypatch.setattr(
+        "agent.worker.query_similar",
+        lambda query, top_k=5: queries.append(query) or [],
+    )
+    monkeypatch.setattr(
+        "agent.worker.tavily_search",
+        lambda query: {"ok": True, "mode": "stub", "results": []},
+    )
+    monkeypatch.setattr("agent.worker.classify_source", lambda text: {"confidence": 70})
+    monkeypatch.setattr("agent.worker.generate_summary", lambda text, fallback: "סיכום")
+
+    evaluate_material(material, str(tmp_path))
+
+    assert queries == ["חוק ניוטון"]
+
+
 def test_evaluate_material_writes_ai_fields_and_an_event(app_context, monkeypatch, tmp_path):
     course = add_course()
     material = add_material(course, "notes.pdf")

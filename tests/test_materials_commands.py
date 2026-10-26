@@ -360,6 +360,37 @@ def test_delete_material_leaves_a_remote_file_alone(app_context, tmp_path):
     assert Event.query.filter_by(event_type=MATERIAL_DELETED).count() == 1
 
 
+def test_approve_upserts_a_chroma_vector(app_context, monkeypatch):
+    seen = []
+    monkeypatch.setattr(
+        "commands.materials.upsert_material",
+        lambda material_id, text: seen.append((material_id, text)) or True,
+    )
+    course = add_course()
+    admin = add_user("admin@jct.ac.il", ADMIN)
+    material = add_material(course)
+
+    approved = approve_material(material.id, admin.id)
+
+    assert approved.status == STATUS_APPROVED
+    assert seen[0][0] == material.id
+    assert "פיזיקה" in seen[0][1]
+
+
+def test_approve_still_succeeds_when_chroma_upsert_fails(app_context, monkeypatch):
+    def explode(material_id, text):
+        raise RuntimeError("chroma down")
+
+    monkeypatch.setattr("commands.materials.upsert_material", explode)
+    course = add_course()
+    admin = add_user("admin@jct.ac.il", ADMIN)
+    material = add_material(course)
+
+    approved = approve_material(material.id, admin.id)
+
+    assert approved.status == STATUS_APPROVED
+
+
 def test_approve_and_reject_record_the_actor(app_context):
     course = add_course()
     admin = add_user("admin@jct.ac.il", ADMIN)
