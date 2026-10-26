@@ -6,6 +6,18 @@
     </a>
 
     <form class="header-search" action="{{ url_for('student_dashboard') }}" method="get">
+      {% if request.args.get("course") %}
+        <input type="hidden" name="course" value="{{ request.args.get("course") }}" />
+      {% endif %}
+      {% if request.args.get("year") is not none and request.args.get("year") != "" %}
+        <input type="hidden" name="year" value="{{ request.args.get("year") }}" />
+      {% endif %}
+      {% if request.args.get("type") %}
+        <input type="hidden" name="type" value="{{ request.args.get("type") }}" />
+      {% endif %}
+      {% if request.args.get("file_type") %}
+        <input type="hidden" name="file_type" value="{{ request.args.get("file_type") }}" />
+      {% endif %}
       <label class="sr-only" for="smart-search">חיפוש חכם</label>
       <div class="search-input-wrap">
         <input
@@ -24,7 +36,7 @@
         {% for value, label in file_types %}
           <a
             class="chip {% if selected_file_type == value %}is-active{% endif %}"
-            href="{% if selected_file_type == value %}{{ url_for('student_dashboard', q=search_query) }}{% else %}{{ url_for('student_dashboard', q=search_query, file_type=value) }}{% endif %}"
+            href="{% if selected_file_type == value %}{{ student_url(file_type="") }}{% else %}{{ student_url(file_type=value) }}{% endif %}"
           >{{ label }}</a>
         {% endfor %}
       </div>

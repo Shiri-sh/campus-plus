@@ -128,6 +128,25 @@ def test_material_payload_includes_summary_and_confidence():
     assert payload["confidence"] == 82
 
 
+def test_dashboard_query_keeps_course_year_and_type():
+    with campus_app.app.test_request_context("/student?course=4&year=0&type=exams&q=newton"):
+        query = campus_app.dashboard_query()
+
+    assert query == {
+        "q": "newton",
+        "course": "4",
+        "year": "0",
+        "type": "exams",
+    }
+
+
+def test_dashboard_query_can_replace_file_type_without_dropping_course():
+    with campus_app.app.test_request_context("/student?course=4&file_type=exam"):
+        query = campus_app.dashboard_query(file_type="summary")
+
+    assert query == {"course": "4", "file_type": "summary"}
+
+
 def test_stored_upload_name_allows_a_missing_suffix(monkeypatch):
     monkeypatch.setattr(campus_app.uuid, "uuid4", lambda: SimpleNamespace(hex="abc123"))
 
