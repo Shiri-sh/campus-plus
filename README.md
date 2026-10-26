@@ -11,7 +11,7 @@ An intelligent academic materials platform for JCT students — upload, discover
 - **AI content agent** — a background worker evaluates every new upload: extracts text, verifies relevance via Tavily, generates a summary, and recommends approve/reject to admins
 - **Upload with live classification** — students upload files and get instant course/type predictions before submitting
 - **Admin dashboard** — KPI cards, pending approval queue, content reports, and user management in one view
-- **MCP tool integration** — Tavily web search and Gmail notifications built as MCP Studio tools
+- **MCP tool integration** — Tavily web search (`python -m mcp_tools.tavily_search.server`) and Gmail notifications (`python -m mcp_tools.gmail_alert.server`) built as MCP Studio tools
 
 ## Architecture
 
