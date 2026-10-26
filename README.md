@@ -6,7 +6,7 @@ An intelligent academic materials platform for JCT students — upload, discover
 
 ## What it does
 
-- **Smart catalog** — browse, search, and preview thousands of academic materials organized by course, year, and type
+- **Smart catalog** — browse, search, and preview thousands of academic materials organized by course, year, and type. Imported files with no detectable year keep `academic_year = 0` and show as לא ידוע in the student explorer and admin year menu.
 - **Hybrid search** — combines SQL keyword matching with Gemini-powered semantic search (ChromaDB) for results that understand what you mean, not just what you typed
 - **AI content agent** — a background worker evaluates every new upload: extracts text, verifies relevance via Tavily, generates a summary, and recommends approve/reject to admins
 - **Upload with live classification** — students upload files and get instant course/type predictions before submitting

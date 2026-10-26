@@ -161,6 +161,17 @@ def test_approved_materials_hides_pending_and_orders_newest_first(app_context):
     assert file_type is None
 
 
+def test_approved_materials_filters_year_zero_as_a_real_year(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "unknown.pdf", academic_year=0)
+    add_material(course, "known.pdf", academic_year=2024)
+
+    materials, year, _file_type = approved_materials(year=0)
+
+    assert year == 0
+    assert [item.file_name for item in materials] == ["unknown.pdf"]
+
+
 def test_approved_materials_uses_an_explicit_year_over_the_query(app_context):
     course = add_course("פיזיקה")
     add_material(course, "old.pdf", academic_year=2020)
@@ -379,6 +390,16 @@ def test_approved_years_for_course_returns_distinct_years_newest_first(app_conte
     assert years == (2024, 2022)
 
 
+def test_approved_years_for_course_includes_year_zero(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "unknown.pdf", academic_year=0)
+    add_material(course, "known.pdf", academic_year=2024)
+
+    years = approved_years_for_course(course.id)
+
+    assert years == (2024, 0)
+
+
 def test_approved_years_for_course_is_empty_when_the_course_has_none(app_context):
     course = add_course("פיזיקה")
     add_material(course, "wait.pdf", status=STATUS_PENDING, academic_year=2024)
@@ -480,6 +501,16 @@ def test_courses_by_name_orders_alphabetically(app_context):
     courses = courses_by_name()
 
     assert [course.name for course in courses] == ["אלגברה", "פיזיקה"]
+
+
+def test_explorer_options_includes_year_zero_from_approved_files(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "unknown.pdf", academic_year=0)
+
+    options = explorer_options()
+
+    assert 0 in options["years"]
+    assert options["years"] == tuple(sorted(options["years"], reverse=True))
 
 
 def test_explorer_options_counts_only_approved_files(app_context):

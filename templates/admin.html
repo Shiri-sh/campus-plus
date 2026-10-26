@@ -244,6 +244,9 @@
               <div class="field">
                 <label for="year-{{ material.id }}">שנה אקדמית</label>
                 <select id="year-{{ material.id }}" name="academic_year">
+                  {% if material.academic_year not in years %}
+                    <option value="{{ material.academic_year }}" selected>{{ hebrew_year(material.academic_year) }}</option>
+                  {% endif %}
                   {% for year in years %}
                     <option value="{{ year }}" {% if year == material.academic_year %}selected{% endif %}>{{ hebrew_year(year) }}</option>
                   {% endfor %}
