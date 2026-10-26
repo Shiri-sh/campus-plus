@@ -97,5 +97,7 @@ One-time data setup:
 
 ```bash
 python scripts/import_drive.py --remote   # seed catalog into somee.com
-python scripts/seed_embeddings.py         # embed 80-100 items into ChromaDB
+python scripts/seed_embeddings.py         # embed 80-100 approved items into local ChromaDB
 ```
+
+`scripts/seed_embeddings.py` writes collection `campus_materials` under `CHROMA_PERSIST_DIR` (default `instance/chroma`). One person runs it; everyone else copies that directory. It does not change material status or call Tavily. Hybrid search and the worker need this folder on the demo machine.
