@@ -92,6 +92,42 @@ def test_stored_upload_name_keeps_a_lowercased_suffix(monkeypatch):
     assert stored == "abc123.pdf"
 
 
+def _payload_material(**overrides):
+    values = {
+        "id": 1,
+        "file_name": "notes.pdf",
+        "course": SimpleNamespace(name="פיזיקה"),
+        "lecturer": None,
+        "academic_year": 2024,
+        "material_type_label": "סיכומים",
+        "ai_summary": None,
+        "confidence": None,
+        "is_link": False,
+        "file_path": "",
+        "status": "approved",
+    }
+    values.update(overrides)
+    return SimpleNamespace(**values)
+
+
+def test_material_payload_uses_a_clear_empty_summary():
+    with campus_app.app.test_request_context():
+        payload = campus_app.material_payload(_payload_material())
+
+    assert payload["ai_summary"] == campus_app.EMPTY_AI_SUMMARY
+    assert payload["confidence"] is None
+
+
+def test_material_payload_includes_summary_and_confidence():
+    with campus_app.app.test_request_context():
+        payload = campus_app.material_payload(
+            _payload_material(ai_summary="סיכום על ניוטון", confidence=82)
+        )
+
+    assert payload["ai_summary"] == "סיכום על ניוטון"
+    assert payload["confidence"] == 82
+
+
 def test_stored_upload_name_allows_a_missing_suffix(monkeypatch):
     monkeypatch.setattr(campus_app.uuid, "uuid4", lambda: SimpleNamespace(hex="abc123"))
 

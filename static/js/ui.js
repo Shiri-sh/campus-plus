@@ -55,6 +55,16 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector("[data-modal-year]").textContent = data.academic_year;
     document.querySelector("[data-modal-type]").textContent = data.material_type;
     document.querySelector("[data-modal-summary]").textContent = data.ai_summary;
+    const confidence = document.querySelector("[data-modal-confidence]");
+    if (confidence) {
+      if (data.confidence == null || data.confidence === "") {
+        confidence.textContent = "";
+        confidence.classList.add("hidden");
+      } else {
+        confidence.textContent = `ביטחון AI: ${data.confidence}%`;
+        confidence.classList.remove("hidden");
+      }
+    }
 
     const preview = document.querySelector("[data-preview-frame]");
     preview.replaceChildren();

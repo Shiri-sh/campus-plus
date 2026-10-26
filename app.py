@@ -298,6 +298,9 @@ def approved_material_or_404(material_id):
     return material
 
 
+EMPTY_AI_SUMMARY = "אין סיכום AI זמין."
+
+
 def material_payload(material):
     preview_kind = "none"
     preview_url = ""
@@ -331,7 +334,8 @@ def material_payload(material):
         "lecturer": material.lecturer or "—",
         "academic_year": hebrew_year(material.academic_year),
         "material_type": material.material_type_label,
-        "ai_summary": material.ai_summary or "עדיין לא נוצר.",
+        "ai_summary": (material.ai_summary or "").strip() or EMPTY_AI_SUMMARY,
+        "confidence": material.confidence,
         "preview_kind": preview_kind,
         "preview_url": preview_url,
         "download_url": download_url,
