@@ -4,6 +4,8 @@ import os
 import chromadb
 from google.genai import Client
 
+from models import hebrew_year
+
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "campus_materials"
@@ -13,6 +15,21 @@ DEFAULT_CHROMA_DIR = "instance/chroma"
 
 def chroma_persist_dir():
     return os.environ.get("CHROMA_PERSIST_DIR") or DEFAULT_CHROMA_DIR
+
+
+def material_document(material):
+    """Plain-text document stored with a material vector."""
+    course_name = material.course.name if getattr(material, "course", None) else ""
+    parts = [
+        material.file_name or "",
+        course_name,
+        hebrew_year(material.academic_year),
+        material.material_type or "",
+    ]
+    summary = (getattr(material, "ai_summary", None) or "").strip()
+    if summary:
+        parts.append(summary[:2000])
+    return " ".join(part for part in parts if part).strip()
 
 
 def embed_text(text):

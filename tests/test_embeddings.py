@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from agent import embeddings
@@ -56,6 +58,24 @@ class _FakeCollection:
 @pytest.fixture
 def gemini_key(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+
+
+def test_material_document_joins_metadata_and_summary():
+    material = SimpleNamespace(
+        file_name="מועד א.pdf",
+        academic_year=2024,
+        material_type="exams",
+        ai_summary="סיכום על ניוטון",
+        course=SimpleNamespace(name="פיזיקה"),
+    )
+
+    document = embeddings.material_document(material)
+
+    assert "מועד א.pdf" in document
+    assert "פיזיקה" in document
+    assert "exams" in document
+    assert 'תשפ"ד' in document
+    assert "סיכום על ניוטון" in document
 
 
 def test_embed_text_returns_none_without_an_api_key(monkeypatch):
