@@ -54,7 +54,6 @@ def add_material(course, file_name="סיכום.pdf", file_path="stored.pdf", upl
         course_id=course.id,
         academic_year=2024,
         material_type="summaries",
-        file_type="summary",
         icon_type="pdf",
         uploaded_at=date(2024, 1, 1),
         status=STATUS_PENDING,
@@ -247,7 +246,6 @@ def test_confirm_pending_upload_stores_a_pending_row(app_context, prediction, re
 
     assert material.status == STATUS_PENDING
     assert material.file_name == "סיכום.pdf"
-    assert material.file_type == "exam"
     assert material.file_path == "stored.pdf"
     assert material.ai_recommendation == recommendation
     assert Material.query.count() == 1
@@ -274,7 +272,6 @@ def test_confirm_pending_upload_stores_a_video_link(app_context):
 
     assert material.file_name == "קישור לוידאו"
     assert material.file_path == "https://youtu.be/abc"
-    assert material.file_type == "recording"
 
 
 def test_confirm_pending_upload_notifies_after_save(app_context, monkeypatch):
@@ -400,7 +397,6 @@ def test_update_material_writes_fields_and_an_event(app_context):
     assert updated.course_id == other.id
     assert updated.academic_year == 2023
     assert updated.material_type == "exams"
-    assert updated.file_type == "exam"
     assert updated.lecturer == "ד\"ר כהן"
     event = Event.query.filter_by(event_type=MATERIAL_UPDATED).one()
     assert event.actor_id == admin.id

@@ -39,14 +39,12 @@ def viewed_material(
     file_name="notes.pdf",
     course_name="פיזיקה",
     year=2024,
-    file_type="summary",
     material_type="summaries",
 ):
     return SimpleNamespace(
         file_name=file_name,
         course=SimpleNamespace(name=course_name),
         academic_year=year,
-        file_type=file_type,
         material_type=material_type,
     )
 
@@ -62,7 +60,6 @@ def add_material(course, file_name, **overrides):
     values = {
         "academic_year": 2024,
         "material_type": "summaries",
-        "file_type": "summary",
         "uploaded_at": date(2024, 1, 1),
         "status": STATUS_APPROVED,
         "file_path": "stored.pdf",
@@ -120,11 +117,11 @@ def course_file_counts(options):
         ("   ", ("", [], None, None)),
         (
             "  2024 מבחן אלגברה  ",
-            ("2024 מבחן אלגברה", ["אלגברה"], 2024, "exam"),
+            ("2024 מבחן אלגברה", ["אלגברה"], 2024, "exams"),
         ),
         ("2020 2024", ("2020 2024", [], 2024, None)),
-        ("Slides", ("Slides", [], None, "presentation")),
-        ("EXAM", ("EXAM", [], None, "exam")),
+        ("Slides", ("Slides", [], None, "presentations")),
+        ("EXAM", ("EXAM", [], None, "exams")),
     ],
 )
 def test_parse_search_query_pulls_out_year_and_file_type(query, expected):
@@ -185,14 +182,14 @@ def test_approved_materials_uses_an_explicit_year_over_the_query(app_context):
     assert [item.file_name for item in materials] == ["old.pdf"]
 
 
-def test_approved_materials_filters_by_a_hebrew_file_type(app_context):
+def test_approved_materials_filters_by_a_hebrew_material_type(app_context):
     course = add_course("פיזיקה")
-    add_material(course, "exam.pdf", file_type="exam", material_type="exams")
-    add_material(course, "notes.pdf", file_type="summary", material_type="summaries")
+    add_material(course, "exam.pdf", material_type="exams")
+    add_material(course, "notes.pdf", material_type="summaries")
 
-    materials, _year, file_type = approved_materials(query="מבחנים")
+    materials, _year, selected_type = approved_materials(query="מבחנים")
 
-    assert file_type == "exam"
+    assert selected_type == "exams"
     assert [item.file_name for item in materials] == ["exam.pdf"]
 
 
@@ -392,21 +389,18 @@ def test_search_admin_materials_applies_course_year_and_type_together(app_contex
         "match.pdf",
         academic_year=2023,
         material_type="exams",
-        file_type="exam",
     )
     add_material(
         physics,
         "other-year.pdf",
         academic_year=2024,
         material_type="exams",
-        file_type="exam",
     )
     add_material(
         algebra,
         "other-course.pdf",
         academic_year=2023,
         material_type="exams",
-        file_type="exam",
     )
 
     materials, _truncated = search_admin_materials(
@@ -420,7 +414,7 @@ def test_search_admin_materials_applies_course_year_and_type_together(app_contex
 
 def test_search_admin_materials_ignores_an_unknown_material_type(app_context):
     course = add_course("פיזיקה")
-    add_material(course, "exam.pdf", material_type="exams", file_type="exam")
+    add_material(course, "exam.pdf", material_type="exams")
     add_material(course, "notes.pdf")
 
     materials, _truncated = search_admin_materials(material_type="nope")

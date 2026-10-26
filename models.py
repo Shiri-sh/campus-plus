@@ -22,13 +22,6 @@ MATERIAL_TYPES = (
     ("recordings", "הקלטות"),
 )
 
-FILE_TYPES = (
-    ("exam", "מבחן"),
-    ("summary", "סיכום"),
-    ("presentation", "מצגת"),
-    ("exercise", "תרגיל"),
-)
-
 STATUS_LABELS = {
     STATUS_PENDING: "ממתין",
     STATUS_APPROVED: "מאושר",
@@ -43,7 +36,6 @@ REPORT_STATUS_LABELS = {
 ACADEMIC_YEARS = tuple(range(2026, 2017, -1))
 
 MATERIAL_TYPE_LABELS = dict(MATERIAL_TYPES)
-FILE_TYPE_LABELS = dict(FILE_TYPES)
 
 GREGORIAN_TO_HEBREW = {
     2017: 'תשע"ז',
@@ -115,7 +107,6 @@ class Material(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey("course.id"), nullable=False)
     academic_year = db.Column(db.Integer, nullable=False)
     material_type = db.Column(db.String(40), nullable=False)
-    file_type = db.Column(db.String(40), nullable=False)
     icon_type = db.Column(db.String(20), nullable=False, default="pdf")
     lecturer = db.Column(db.Unicode(255))
     uploaded_at = db.Column(db.Date, nullable=False)
@@ -132,7 +123,7 @@ class Material(db.Model):
 
     @property
     def file_type_label(self):
-        return FILE_TYPE_LABELS.get(self.file_type, self.file_type.title())
+        return MATERIAL_TYPE_LABELS.get(self.material_type, self.material_type)
 
     @property
     def icon_label(self):

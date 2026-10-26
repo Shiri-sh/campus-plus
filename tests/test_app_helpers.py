@@ -140,11 +140,11 @@ def test_dashboard_query_keeps_course_year_and_type():
     }
 
 
-def test_dashboard_query_can_replace_file_type_without_dropping_course():
-    with campus_app.app.test_request_context("/student?course=4&file_type=exam"):
-        query = campus_app.dashboard_query(file_type="summary")
+def test_dashboard_query_can_replace_type_without_dropping_course():
+    with campus_app.app.test_request_context("/student?course=4&type=exams"):
+        query = campus_app.dashboard_query(type="summaries")
 
-    assert query == {"course": "4", "file_type": "summary"}
+    assert query == {"course": "4", "type": "summaries"}
 
 
 def test_stored_upload_name_allows_a_missing_suffix(monkeypatch):

@@ -23,7 +23,6 @@ def add_material(course, file_name, **overrides):
     values = {
         "academic_year": 2024,
         "material_type": "summaries",
-        "file_type": "summary",
         "uploaded_at": date(2024, 1, 1),
         "status": STATUS_PENDING,
         "file_path": "stored.pdf",

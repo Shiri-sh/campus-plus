@@ -222,6 +222,24 @@ def test_sqlite_does_not_emit_a_drop_constraint_for_event_actor():
     assert statements == []
 
 
+def test_mssql_drops_the_legacy_file_type_column():
+    columns = complete_columns()
+    columns["material"]["file_type"] = "VARCHAR"
+
+    statements = migration_statements(True, columns)
+
+    assert "ALTER TABLE [material] DROP COLUMN file_type" in statements
+
+
+def test_sqlite_does_not_drop_file_type():
+    columns = complete_columns()
+    columns["material"]["file_type"] = "VARCHAR"
+
+    statements = migration_statements(False, columns)
+
+    assert statements == []
+
+
 def test_sqlite_does_not_rewrite_varchar_file_name():
     columns = columns_with("material", "file_name", "VARCHAR")
 

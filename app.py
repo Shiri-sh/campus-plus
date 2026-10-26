@@ -39,7 +39,6 @@ from extensions import csrf, db, login_manager
 from models import (
     ADMIN,
     ACADEMIC_YEARS,
-    FILE_TYPES,
     MATERIAL_TYPES,
     ROLES,
     STATUS_APPROVED,
@@ -214,7 +213,6 @@ def logout():
 def dashboard_query(**updates):
     args = {
         "q": request.args.get("q", ""),
-        "file_type": request.args.get("file_type", ""),
         "course": request.args.get("course", ""),
         "year": request.args.get("year", ""),
         "type": request.args.get("type", ""),
@@ -230,7 +228,7 @@ def inject_dashboard_url():
 
     return {
         "student_url": student_url,
-        "file_types": FILE_TYPES,
+        "material_types": MATERIAL_TYPES,
         "search_query": request.args.get("q", ""),
         "hebrew_year": hebrew_year,
     }
@@ -249,16 +247,14 @@ def student_dashboard():
     except ValueError:
         year = None
     material_type = request.args.get("type") or None
-    file_type = request.args.get("file_type") or None
 
     if query and not course_id:
         course_id = course_id_for_name(query) or course_id
 
-    materials, inferred_year, inferred_file_type = approved_materials(
+    materials, inferred_year, inferred_type = approved_materials(
         course_id=course_id,
         year=year,
         material_type=material_type,
-        file_type=file_type,
         query=query,
     )
     options = explorer_options()
@@ -276,12 +272,10 @@ def student_dashboard():
         courses=options["courses"],
         years=years,
         material_types=options["material_types"],
-        file_types=options["file_types"],
         courses_with_files=options["courses_with_files"],
         selected_course=selected_course,
         selected_year=year,
-        selected_type=material_type,
-        selected_file_type=file_type or inferred_file_type,
+        selected_type=material_type or inferred_type,
         search_query=query,
     )
 

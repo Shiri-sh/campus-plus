@@ -15,9 +15,6 @@
       {% if request.args.get("type") %}
         <input type="hidden" name="type" value="{{ request.args.get("type") }}" />
       {% endif %}
-      {% if request.args.get("file_type") %}
-        <input type="hidden" name="file_type" value="{{ request.args.get("file_type") }}" />
-      {% endif %}
       <label class="sr-only" for="smart-search">חיפוש חכם</label>
       <div class="search-input-wrap">
         <input
@@ -33,10 +30,10 @@
       </div>
       <div class="typeahead" data-suggest-list></div>
       <div class="filters">
-        {% for value, label in file_types %}
+        {% for value, label in material_types %}
           <a
-            class="chip {% if selected_file_type == value %}is-active{% endif %}"
-            href="{% if selected_file_type == value %}{{ student_url(file_type="") }}{% else %}{{ student_url(file_type=value) }}{% endif %}"
+            class="chip {% if selected_type == value %}is-active{% endif %}"
+            href="{% if selected_type == value %}{{ student_url(type="") }}{% else %}{{ student_url(type=value) }}{% endif %}"
           >{{ label }}</a>
         {% endfor %}
       </div>

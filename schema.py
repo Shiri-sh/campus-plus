@@ -88,6 +88,8 @@ def _add_column_statements(is_mssql, columns):
         statements.append(f"ALTER TABLE {report} ADD admin_reply {text_type}")
     if "replied_at" not in report_cols:
         statements.append(f"ALTER TABLE {report} ADD replied_at DATETIME")
+    if is_mssql and "file_type" in material_cols:
+        statements.append(f"ALTER TABLE {material} DROP COLUMN file_type")
     return statements
 
 
