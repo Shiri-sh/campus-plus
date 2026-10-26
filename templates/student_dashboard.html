@@ -10,7 +10,7 @@
       <span>/</span>
       <a href="{{ url_for('student_dashboard', course=selected_course.id) }}#explorer">{{ selected_course.name }}</a>
     {% endif %}
-    {% if selected_year %}
+    {% if selected_year is not none %}
       <span>/</span>
       <a href="{{ url_for('student_dashboard', course=selected_course.id, year=selected_year) }}#explorer">{{ hebrew_year(selected_year) }}</a>
     {% endif %}
@@ -41,7 +41,7 @@
           </a>
         {% endfor %}
       </div>
-    {% elif not selected_year %}
+    {% elif selected_year is none %}
       <h2 class="explorer-label">שנים אקדמיות ב{{ selected_course.name }}</h2>
       <div class="card-row">
         {% for year in years %}

@@ -83,13 +83,13 @@ def relevance_score(material, tokens):
 
 def approved_materials(course_id=None, year=None, material_type=None, file_type=None, query=""):
     _, tokens, query_year, query_file_type = parse_search_query(query)
-    selected_year = int(year) if year else query_year
+    selected_year = query_year if year is None else int(year)
     selected_file_type = file_type or query_file_type
 
     records = Material.query.filter_by(status=STATUS_APPROVED)
     if course_id:
         records = records.filter_by(course_id=int(course_id))
-    if selected_year:
+    if selected_year is not None:
         records = records.filter_by(academic_year=selected_year)
     if material_type:
         records = records.filter_by(material_type=material_type)
@@ -131,7 +131,7 @@ def search_admin_materials(
         records = records.filter(Material.status == status)
     if course_id:
         records = records.filter(Material.course_id == course_id)
-    if year:
+    if year is not None:
         records = records.filter(Material.academic_year == year)
     if material_type in dict(MATERIAL_TYPES):
         records = records.filter(Material.material_type == material_type)
