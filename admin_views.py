@@ -2,9 +2,16 @@ from pathlib import Path
 
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_from_directory, url_for
 from flask_login import current_user
-from sqlalchemy import func
 
-from catalog import search_admin_materials
+from catalog import (
+    admin_reports,
+    admin_users,
+    approved_course_counts,
+    courses_by_name,
+    open_report_count,
+    pending_materials,
+    search_admin_materials,
+)
 from commands.materials import (
     approve_material as approve_material_record,
     delete_material as delete_material_record,
@@ -20,9 +27,7 @@ from models import (
     MATERIAL_TYPES,
     STATUS_APPROVED,
     STATUS_LABELS,
-    STATUS_PENDING,
     STATUS_REJECTED,
-    Course,
     Material,
     Report,
     User,
@@ -85,25 +90,13 @@ def register_admin_routes(app, role_required, material_payload):
     @app.route("/admin")
     @role_required(ADMIN)
     def admin():
-        pending = (
-            Material.query.filter_by(status=STATUS_PENDING)
-            .order_by(Material.uploaded_at.desc())
-            .all()
-        )
+        pending = pending_materials()
         for material in pending:
             if not material.ai_recommendation:
                 material.ai_recommendation = recommendation_for(material)
-        reports = Report.query.order_by(Report.created_at.desc()).all()
-        users = User.query.order_by(User.role, User.email).all()
-        distribution = (
-            db.session.query(Course.name, func.count(Material.id))
-            .join(Material)
-            .filter(Material.status == STATUS_APPROVED)
-            .group_by(Course.name)
-            .order_by(func.count(Material.id).desc())
-            .limit(8)
-            .all()
-        )
+        reports = admin_reports()
+        users = admin_users()
+        distribution = approved_course_counts()
         filters = material_filters_from_request()
         materials, materials_truncated = search_admin_materials(
             query=filters["q"],
@@ -123,7 +116,7 @@ def register_admin_routes(app, role_required, material_payload):
             materials_truncated=materials_truncated,
             material_filters=filters,
             filters_active=any(filters.values()),
-            courses=Course.query.order_by(Course.name).all(),
+            courses=courses_by_name(),
             years=ACADEMIC_YEARS,
             material_types=MATERIAL_TYPES,
             status_filters=(
@@ -131,7 +124,7 @@ def register_admin_routes(app, role_required, material_payload):
                 (STATUS_REJECTED, STATUS_LABELS[STATUS_REJECTED]),
             ),
             pending_count=len(pending),
-            open_report_count=Report.query.filter_by(status="open").count(),
+            open_report_count=open_report_count(),
             active_course_count=len(distribution),
             distribution=distribution,
         )

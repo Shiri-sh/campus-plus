@@ -1,18 +1,36 @@
-from datetime import date
+from datetime import date, datetime
 from types import SimpleNamespace
 
 import pytest
 
 from catalog import (
+    admin_reports,
+    admin_users,
+    approved_course_counts,
     approved_materials,
+    approved_years_for_course,
+    course_id_for_name,
+    courses_by_name,
     explorer_options,
+    open_report_count,
     parse_search_query,
+    pending_materials,
     relevance_score,
     search_admin_materials,
     suggestion_items,
 )
 from extensions import db
-from models import STATUS_APPROVED, STATUS_PENDING, STATUS_REJECTED, Course, Material
+from models import (
+    ADMIN,
+    STATUS_APPROVED,
+    STATUS_PENDING,
+    STATUS_REJECTED,
+    STUDENT,
+    Course,
+    Material,
+    Report,
+    User,
+)
 
 
 def viewed_material(
@@ -59,9 +77,34 @@ def add_material(course, file_name, **overrides):
     return material
 
 
+def add_user(email, role=STUDENT):
+    user = User(email=email, password_hash="hash", role=role)
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+def add_report(material, reporter, created_at, status="open"):
+    report = Report(
+        material_id=material.id,
+        reporter_id=reporter.id,
+        message="דיווח",
+        created_at=created_at,
+        status=status,
+    )
+    db.session.add(report)
+    db.session.commit()
+    return report
+
+
 def add_repeated_files(course, count):
     for index in range(count):
         add_material(course, f"קובץ-{index}.pdf")
+
+
+def add_one_file_courses(names):
+    for name in names:
+        add_material(add_course(name), f"{name}.pdf")
 
 
 def course_file_counts(options):
@@ -307,6 +350,136 @@ def test_search_admin_materials_reports_when_more_rows_exist(app_context):
 
     assert [item.file_name for item in materials] == ["newer.pdf"]
     assert truncated is True
+
+
+def test_course_id_for_name_matches_an_existing_course(app_context):
+    course = add_course("פיזיקה")
+
+    matched_id = course_id_for_name("פיזיקה")
+
+    assert matched_id == course.id
+
+
+def test_course_id_for_name_returns_none_when_no_course_matches(app_context):
+    add_course("פיזיקה")
+
+    matched_id = course_id_for_name("אלגברה")
+
+    assert matched_id is None
+
+
+def test_approved_years_for_course_returns_distinct_years_newest_first(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "a.pdf", academic_year=2022)
+    add_material(course, "b.pdf", academic_year=2024)
+    add_material(course, "c.pdf", academic_year=2022)
+
+    years = approved_years_for_course(course.id)
+
+    assert years == (2024, 2022)
+
+
+def test_approved_years_for_course_is_empty_when_the_course_has_none(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "wait.pdf", status=STATUS_PENDING, academic_year=2024)
+
+    years = approved_years_for_course(course.id)
+
+    assert years == ()
+
+
+def test_pending_materials_returns_newest_upload_first(app_context):
+    course = add_course("פיזיקה")
+    add_material(course, "old.pdf", status=STATUS_PENDING, uploaded_at=date(2024, 1, 1))
+    add_material(course, "new.pdf", status=STATUS_PENDING, uploaded_at=date(2024, 6, 1))
+    add_material(course, "ok.pdf", status=STATUS_APPROVED)
+
+    materials = pending_materials()
+
+    assert [item.file_name for item in materials] == ["new.pdf", "old.pdf"]
+
+
+def test_admin_reports_returns_newest_first(app_context):
+    course = add_course("פיזיקה")
+    material = add_material(course, "notes.pdf")
+    reporter = add_user("student@jct.ac.il")
+    add_report(material, reporter, datetime(2024, 1, 1))
+    add_report(material, reporter, datetime(2024, 6, 1))
+
+    reports = admin_reports()
+
+    assert [item.created_at for item in reports] == [
+        datetime(2024, 6, 1),
+        datetime(2024, 1, 1),
+    ]
+
+
+def test_open_report_count_ignores_answered_reports(app_context):
+    course = add_course("פיזיקה")
+    material = add_material(course, "notes.pdf")
+    reporter = add_user("student@jct.ac.il")
+    add_report(material, reporter, datetime(2024, 1, 1), status="open")
+    add_report(material, reporter, datetime(2024, 2, 1), status="answered")
+
+    count = open_report_count()
+
+    assert count == 1
+
+
+def test_admin_users_orders_by_role_then_email(app_context):
+    add_user("b-student@jct.ac.il", STUDENT)
+    add_user("a-student@jct.ac.il", STUDENT)
+    add_user("z-admin@jct.ac.il", ADMIN)
+
+    users = admin_users()
+
+    assert [user.email for user in users] == [
+        "z-admin@jct.ac.il",
+        "a-student@jct.ac.il",
+        "b-student@jct.ac.il",
+    ]
+
+
+def test_approved_course_counts_ranks_by_approved_file_count(app_context):
+    physics = add_course("פיזיקה")
+    algebra = add_course("אלגברה")
+    add_material(physics, "a.pdf")
+    add_material(physics, "b.pdf")
+    add_material(algebra, "c.pdf")
+    add_material(algebra, "hidden.pdf", status=STATUS_PENDING)
+
+    distribution = approved_course_counts()
+
+    assert distribution == [("פיזיקה", 2), ("אלגברה", 1)]
+
+
+def test_approved_course_counts_returns_at_most_eight(app_context):
+    add_one_file_courses(
+        (
+            "קורס-0",
+            "קורס-1",
+            "קורס-2",
+            "קורס-3",
+            "קורס-4",
+            "קורס-5",
+            "קורס-6",
+            "קורס-7",
+            "קורס-8",
+        )
+    )
+
+    distribution = approved_course_counts()
+
+    assert len(distribution) == 8
+
+
+def test_courses_by_name_orders_alphabetically(app_context):
+    add_course("פיזיקה")
+    add_course("אלגברה")
+
+    courses = courses_by_name()
+
+    assert [course.name for course in courses] == ["אלגברה", "פיזיקה"]
 
 
 def test_explorer_options_counts_only_approved_files(app_context):
