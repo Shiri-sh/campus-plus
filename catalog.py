@@ -12,6 +12,8 @@ from models import (
     STATUS_REJECTED,
     Course,
     Material,
+    Report,
+    User,
     hebrew_year,
 )
 
@@ -151,6 +153,61 @@ def search_admin_materials(
         .all()
     )
     return rows[:limit], len(rows) > limit
+
+
+def course_id_for_name(name):
+    if not name:
+        return None
+    course = Course.query.filter(Course.name.ilike(name)).first()
+    return None if course is None else course.id
+
+
+def approved_years_for_course(course_id):
+    years = [
+        year
+        for (year,) in db.session.query(Material.academic_year)
+        .filter_by(course_id=course_id, status=STATUS_APPROVED)
+        .distinct()
+        .all()
+        if year is not None
+    ]
+    return tuple(sorted(years, reverse=True))
+
+
+def pending_materials():
+    return (
+        Material.query.filter_by(status=STATUS_PENDING)
+        .order_by(Material.uploaded_at.desc())
+        .all()
+    )
+
+
+def admin_reports():
+    return Report.query.order_by(Report.created_at.desc()).all()
+
+
+def open_report_count():
+    return Report.query.filter_by(status="open").count()
+
+
+def admin_users():
+    return User.query.order_by(User.role, User.email).all()
+
+
+def approved_course_counts(limit=8):
+    return (
+        db.session.query(Course.name, func.count(Material.id))
+        .join(Material)
+        .filter(Material.status == STATUS_APPROVED)
+        .group_by(Course.name)
+        .order_by(func.count(Material.id).desc())
+        .limit(limit)
+        .all()
+    )
+
+
+def courses_by_name():
+    return Course.query.order_by(Course.name).all()
 
 
 def suggestion_items(query):

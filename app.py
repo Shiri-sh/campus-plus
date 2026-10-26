@@ -22,7 +22,13 @@ from flask import (
 from flask_login import current_user, login_required, login_user, logout_user
 from flask_wtf.csrf import CSRFError
 
-from catalog import approved_materials, explorer_options, suggestion_items
+from catalog import (
+    approved_materials,
+    approved_years_for_course,
+    course_id_for_name,
+    explorer_options,
+    suggestion_items,
+)
 from classify import ICON_BY_EXTENSION, classify_source
 from commands.materials import confirm_pending_upload
 from commands.reports import create_report
@@ -245,9 +251,7 @@ def student_dashboard():
     file_type = request.args.get("file_type") or None
 
     if query and not course_id:
-        exact_course = Course.query.filter(Course.name.ilike(query)).first()
-        if exact_course:
-            course_id = exact_course.id
+        course_id = course_id_for_name(query) or course_id
 
     materials, inferred_year, inferred_file_type = approved_materials(
         course_id=course_id,
@@ -263,16 +267,7 @@ def student_dashboard():
 
     years = options["years"]
     if selected_course:
-        course_years = [
-            item
-            for (item,) in db.session.query(Material.academic_year)
-            .filter_by(course_id=selected_course.id, status=STATUS_APPROVED)
-            .distinct()
-            .all()
-            if item is not None
-        ]
-        if course_years:
-            years = tuple(sorted(course_years, reverse=True))
+        years = approved_years_for_course(selected_course.id) or years
 
     return render_template(
         "student_dashboard.html",
