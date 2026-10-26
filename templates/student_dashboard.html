@@ -10,7 +10,7 @@
       <span>/</span>
       <a href="{{ url_for('student_dashboard', course=selected_course.id) }}#explorer">{{ selected_course.name }}</a>
     {% endif %}
-    {% if selected_year is not none %}
+    {% if selected_course and selected_year is not none %}
       <span>/</span>
       <a href="{{ url_for('student_dashboard', course=selected_course.id, year=selected_year) }}#explorer">{{ hebrew_year(selected_year) }}</a>
     {% endif %}
