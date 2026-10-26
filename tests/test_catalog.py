@@ -17,6 +17,7 @@ from catalog import (
     pending_materials,
     relevance_score,
     search_admin_materials,
+    semantic_score,
     suggestion_items,
 )
 from extensions import db
@@ -204,6 +205,80 @@ def test_approved_materials_drops_files_with_no_token_hits(app_context):
     assert file_type is None
     assert [item.file_name for item in materials] == ["newton.pdf"]
     assert materials[0].relevance == 100
+
+
+@pytest.mark.parametrize(
+    ("distance", "expected"),
+    [
+        (0, 100),
+        (None, 50),
+        (1, 50),
+    ],
+)
+def test_semantic_score_converts_distance_into_zero_to_one_hundred(distance, expected):
+    score = semantic_score(distance)
+
+    assert score == expected
+
+
+def test_approved_materials_merges_keyword_and_chroma_hits(app_context, monkeypatch):
+    course = add_course("פיזיקה")
+    add_material(course, "newton.pdf")
+    semantic = add_material(course, "mechanics.pdf")
+    semantic_id = semantic.id
+    monkeypatch.setattr(
+        "catalog._run_semantic_hits",
+        lambda query: [{"material_id": semantic_id, "distance": 0.0}],
+    )
+
+    materials, _year, _file_type = approved_materials(query="newton")
+
+    assert [item.file_name for item in materials] == ["newton.pdf", "mechanics.pdf"]
+    assert materials[1].relevance == 100
+
+
+def test_approved_materials_discards_chroma_hits_outside_filters(app_context, monkeypatch):
+    physics = add_course("פיזיקה")
+    algebra = add_course("אלגברה")
+    add_material(physics, "newton.pdf")
+    other = add_material(algebra, "other.pdf")
+    other_id = other.id
+    monkeypatch.setattr(
+        "catalog._run_semantic_hits",
+        lambda query: [{"material_id": other_id, "distance": 0.0}],
+    )
+
+    materials, _year, _file_type = approved_materials(course_id=physics.id, query="newton")
+
+    assert [item.file_name for item in materials] == ["newton.pdf"]
+
+
+def test_approved_materials_keeps_keyword_results_when_chroma_fails(app_context, monkeypatch):
+    course = add_course("פיזיקה")
+    add_material(course, "newton.pdf")
+
+    def boom(query):
+        raise RuntimeError("chroma down")
+
+    monkeypatch.setattr("catalog._run_semantic_hits", boom)
+
+    materials, _year, _file_type = approved_materials(query="newton")
+
+    assert [item.file_name for item in materials] == ["newton.pdf"]
+
+
+def test_suggestion_items_includes_a_chroma_hit(app_context, monkeypatch):
+    course = add_course("פיזיקה")
+    material = add_material(course, "mechanics.pdf", academic_year=2024)
+    material_id = material.id
+    monkeypatch.setattr(
+        "catalog._run_semantic_hits",
+        lambda query: [{"material_id": material_id, "distance": 0.1}],
+    )
+
+    suggestions = suggestion_items("גלים")
+
+    assert suggestions == [{"label": "mechanics.pdf", "hint": 'פיזיקה · תשפ"ד'}]
 
 
 @pytest.mark.parametrize("query", ["", "   ", None])
