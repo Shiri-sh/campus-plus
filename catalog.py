@@ -1,7 +1,10 @@
 import re
+import sys
+from concurrent.futures import ThreadPoolExecutor
 
 from sqlalchemy import func, or_
 
+from agent.embeddings import query_similar
 from extensions import db
 from models import (
     ACADEMIC_YEARS,
@@ -65,6 +68,91 @@ def parse_search_query(query):
     return text, tokens, year, file_type
 
 
+def semantic_score(distance):
+    if distance is None:
+        return 50
+    return int(max(0, min(100, (1 / (1 + float(distance))) * 100)))
+
+
+def _semantic_hits(query):
+    text = (query or "").strip()
+    if not text:
+        return []
+    try:
+        return query_similar(text, top_k=20) or []
+    except Exception:
+        return []
+
+
+def _run_semantic_hits(query):
+    current = sys.modules[__name__]
+    try:
+        return current._semantic_hits(query) or []
+    except Exception:
+        return []
+
+
+def _keyword_materials(records, tokens):
+    materials = records.order_by(Material.uploaded_at.desc()).all()
+    if not tokens:
+        for material in materials:
+            material.relevance = 0
+        return materials
+    scored = []
+    for material in materials:
+        score = relevance_score(material, tokens)
+        if score:
+            material.relevance = score
+            scored.append(material)
+    return scored
+
+
+def _merge_hybrid(keyword_materials, chroma_hits, filters):
+    by_id = {material.id: material for material in keyword_materials}
+    keyword_scores = {material.id: material.relevance or 0 for material in keyword_materials}
+    chroma_ids = [row["material_id"] for row in chroma_hits if row.get("material_id") is not None]
+    missing_ids = [material_id for material_id in chroma_ids if material_id not in by_id]
+    if missing_ids:
+        extra = Material.query.filter(
+            Material.id.in_(missing_ids),
+            Material.status == STATUS_APPROVED,
+        )
+        if filters.get("course_id"):
+            extra = extra.filter_by(course_id=int(filters["course_id"]))
+        if filters.get("year") is not None:
+            extra = extra.filter_by(academic_year=filters["year"])
+        if filters.get("material_type"):
+            extra = extra.filter_by(material_type=filters["material_type"])
+        if filters.get("file_type"):
+            extra = extra.filter_by(file_type=filters["file_type"])
+        for material in extra.all():
+            by_id[material.id] = material
+            keyword_scores.setdefault(material.id, 0)
+
+    allowed = set(by_id)
+    semantic_scores = {}
+    for row in chroma_hits:
+        material_id = row.get("material_id")
+        if material_id not in allowed:
+            continue
+        semantic_scores[material_id] = semantic_score(row.get("distance"))
+
+    merged = []
+    for material_id, material in by_id.items():
+        keyword = keyword_scores.get(material_id, 0)
+        semantic = semantic_scores.get(material_id, 0)
+        if keyword and semantic:
+            material.relevance = int((keyword + semantic) / 2)
+        else:
+            material.relevance = keyword or semantic or None
+        merged.append(material)
+    return sorted(
+        merged,
+        key=lambda item: (item.relevance or 0, item.uploaded_at),
+        reverse=True,
+    )
+
+
 def relevance_score(material, tokens):
     if not tokens:
         return None
@@ -82,7 +170,7 @@ def relevance_score(material, tokens):
 
 
 def approved_materials(course_id=None, year=None, material_type=None, file_type=None, query=""):
-    _, tokens, query_year, query_file_type = parse_search_query(query)
+    text, tokens, query_year, query_file_type = parse_search_query(query)
     selected_year = query_year if year is None else int(year)
     selected_file_type = file_type or query_file_type
 
@@ -96,20 +184,34 @@ def approved_materials(course_id=None, year=None, material_type=None, file_type=
     if selected_file_type:
         records = records.filter_by(file_type=selected_file_type)
 
-    materials = records.order_by(Material.uploaded_at.desc()).all()
+    executor = None
+    chroma_future = None
+    if text:
+        executor = ThreadPoolExecutor(max_workers=1)
+        chroma_future = executor.submit(_run_semantic_hits, text)
+    keyword_materials = _keyword_materials(records, tokens)
+    try:
+        chroma_hits = chroma_future.result() if chroma_future else []
+    except Exception:
+        chroma_hits = []
+    if executor is not None:
+        executor.shutdown(wait=True)
 
-    if tokens:
-        scored = []
-        for material in materials:
-            score = relevance_score(material, tokens)
-            if score:
-                material.relevance = score
-                scored.append(material)
-        materials = sorted(scored, key=lambda item: item.relevance, reverse=True)
-    else:
-        for material in materials:
+    if not text:
+        for material in keyword_materials:
             material.relevance = None
+        return keyword_materials, selected_year, selected_file_type
 
+    materials = _merge_hybrid(
+        keyword_materials,
+        chroma_hits,
+        {
+            "course_id": course_id,
+            "year": selected_year,
+            "material_type": material_type,
+            "file_type": selected_file_type,
+        },
+    )
     return materials, selected_year, selected_file_type
 
 
@@ -215,12 +317,17 @@ def suggestion_items(query):
     if not text:
         return []
 
+    executor = ThreadPoolExecutor(max_workers=1)
+    chroma_future = executor.submit(_run_semantic_hits, text)
+
     suggestions = []
+    seen = set()
     courses = Course.query.order_by(Course.name).all()
     for course in courses:
         haystack = course.name.lower()
         if all(token in haystack for token in tokens) or text.lower() in haystack:
             suggestions.append({"label": course.name, "hint": "קורס"})
+            seen.add(course.name)
 
     materials = Material.query.filter_by(status=STATUS_APPROVED).all()
     for material in materials:
@@ -232,6 +339,31 @@ def suggestion_items(query):
                     "hint": f"{material.course.name} · {hebrew_year(material.academic_year)}",
                 }
             )
+            seen.add(material.file_name)
+
+    try:
+        chroma_hits = chroma_future.result()
+    except Exception:
+        chroma_hits = []
+    executor.shutdown(wait=True)
+    chroma_ids = [row["material_id"] for row in chroma_hits if row.get("material_id") is not None]
+    if chroma_ids:
+        extras = Material.query.filter(
+            Material.id.in_(chroma_ids),
+            Material.status == STATUS_APPROVED,
+        ).all()
+        extras_by_id = {item.id: item for item in extras}
+        for row in chroma_hits:
+            material = extras_by_id.get(row.get("material_id"))
+            if material is None or material.file_name in seen:
+                continue
+            suggestions.append(
+                {
+                    "label": material.file_name,
+                    "hint": f"{material.course.name} · {hebrew_year(material.academic_year)}",
+                }
+            )
+            seen.add(material.file_name)
 
     return suggestions[:8]
 
