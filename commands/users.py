@@ -4,11 +4,12 @@ from events import (
     USER_BLOCKED,
     USER_DELETED,
     USER_REGISTERED,
+    USER_ROLE_CHANGED,
     USER_UNBLOCKED,
     record_event,
 )
 from extensions import db
-from models import Material, Report, User
+from models import ADMIN, ROLES, Material, Report, User
 
 
 def register_user(email, password, role):
@@ -23,6 +24,49 @@ def register_user(email, password, role):
         user.id,
         actor_id=user.id,
         payload={"email": email, "role": role},
+    )
+    return user
+
+
+def create_user_by_admin(email, password, role, actor_id):
+    if role not in ROLES:
+        raise ValueError(f"invalid role: {role}")
+    if User.query.filter_by(email=email).first():
+        raise ValueError("email already registered")
+    user = User(email=email, role=role)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    record_event(
+        USER_REGISTERED,
+        "User",
+        user.id,
+        actor_id=actor_id,
+        payload={"email": email, "role": role},
+    )
+    return user
+
+
+def set_user_role(user_id, role, actor_id):
+    if role not in ROLES:
+        raise ValueError(f"invalid role: {role}")
+    user = db.session.get(User, user_id)
+    if user is None:
+        raise LookupError(f"user {user_id} not found")
+    if user.role == role:
+        return user
+    if user.role == ADMIN and role != ADMIN:
+        if User.query.filter_by(role=ADMIN).count() <= 1:
+            raise ValueError("cannot demote the last admin")
+    previous_role = user.role
+    user.role = role
+    db.session.commit()
+    record_event(
+        USER_ROLE_CHANGED,
+        "User",
+        user.id,
+        actor_id=actor_id,
+        payload={"email": user.email, "from": previous_role, "to": role},
     )
     return user
 
