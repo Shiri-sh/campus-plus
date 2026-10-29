@@ -26,6 +26,7 @@ from commands.users import (
     set_user_role,
 )
 from extensions import db
+from link_download import link_download_target
 from models import (
     ADMIN,
     ACADEMIC_YEARS,
@@ -86,6 +87,18 @@ def materials_redirect():
     return redirect(url_for("admin", tab="materials", **filters))
 
 
+def admin_material_payload(material, material_payload):
+    """Admin preview modal must use admin routes, not student-only URLs."""
+    payload = material_payload(material)
+    if material.file_path:
+        payload["download_url"] = url_for("admin_file", material_id=material.id)
+    if material.file_path and not material.is_link:
+        payload["preview_url"] = url_for(
+            "admin_preview_material", material_id=material.id
+        )
+    return payload
+
+
 def register_admin_routes(app, role_required, material_payload):
     def admin_material(material_id):
         material = db.session.get(Material, material_id)
@@ -138,7 +151,21 @@ def register_admin_routes(app, role_required, material_payload):
     @app.route("/admin/materials/<int:material_id>")
     @role_required(ADMIN)
     def admin_material_details(material_id):
-        return jsonify(material_payload(admin_material(material_id)))
+        material = admin_material(material_id)
+        return jsonify(admin_material_payload(material, material_payload))
+
+    @app.route("/admin/materials/<int:material_id>/preview")
+    @role_required(ADMIN)
+    def admin_preview_material(material_id):
+        material = admin_material(material_id)
+        if not material.file_path:
+            abort(404)
+        if material.is_link:
+            return redirect(material.file_path)
+        return send_from_directory(
+            current_app.config["UPLOAD_FOLDER"],
+            Path(material.file_path).name,
+        )
 
     @app.route("/admin/materials/<int:material_id>/file")
     @role_required(ADMIN)
@@ -147,7 +174,7 @@ def register_admin_routes(app, role_required, material_payload):
         if not material.file_path:
             abort(404)
         if material.is_link:
-            return redirect(material.file_path)
+            return redirect(link_download_target(material.file_path))
         return send_from_directory(
             current_app.config["UPLOAD_FOLDER"],
             Path(material.file_path).name,

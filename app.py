@@ -22,6 +22,7 @@ from flask import (
 from flask_login import current_user, login_required, login_user, logout_user
 from flask_wtf.csrf import CSRFError
 
+from link_download import link_download_target
 from catalog import (
     approved_materials,
     approved_years_for_course,
@@ -306,10 +307,12 @@ def material_payload(material):
         preview_url = material.file_path
     elif material.file_path:
         preview_kind = "file"
-        preview_url = url_for(
-            "preview_material" if material.status == STATUS_APPROVED else "admin_file",
-            material_id=material.id,
+        preview_endpoint = (
+            "preview_material"
+            if material.status == STATUS_APPROVED
+            else "admin_preview_material"
         )
+        preview_url = url_for(preview_endpoint, material_id=material.id)
 
     download_url = ""
     if material.file_path:
@@ -356,7 +359,7 @@ def download_material(material_id):
     if not material.file_path:
         abort(404)
     if material.is_link:
-        return redirect(material.file_path)
+        return redirect(link_download_target(material.file_path))
     return send_from_directory(
         app.config["UPLOAD_FOLDER"],
         Path(material.file_path).name,

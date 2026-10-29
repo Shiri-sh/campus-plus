@@ -101,28 +101,61 @@
     {% endif %}
   </section>
 
-  <section class="panel {% if active_tab != 'reports' %}hidden{% endif %}" data-tab-panel-group="admin" data-tab-panel="reports">
+  <section class="panel reports-panel {% if active_tab != 'reports' %}hidden{% endif %}" data-tab-panel-group="admin" data-tab-panel="reports">
     {% if reports %}
-      {% for report in reports %}
-        <article class="report-item">
-          <div>
-            <h3><bdi>{{ report.material.file_name }}</bdi></h3>
-            <p><strong>{{ report.reporter.email }}</strong> · {{ report.created_at.strftime("%d/%m/%Y %H:%M") }} · {{ report.status }}</p>
-            <p>{{ report.message }}</p>
-            {% if report.admin_reply %}
-              <p class="field-hint">תגובה שנשמרה: {{ report.admin_reply }}</p>
-            {% endif %}
-            <form class="form-stack reply-form" action="{{ url_for('reply_report', report_id=report.id) }}" method="post">
-              {% include "partials/csrf.html" %}
-              <div class="field">
-                <label class="sr-only" for="reply-{{ report.id }}">תגובה ל{{ report.reporter.email }}</label>
-                <textarea id="reply-{{ report.id }}" name="reply" rows="3" required placeholder="כתוב/י עדכון ישיר לסטודנט/ית."></textarea>
-              </div>
-              <button class="btn btn-primary" type="submit">שליחת עדכון</button>
-            </form>
-          </div>
-        </article>
-      {% endfor %}
+      <div class="reports-table-wrap">
+        <table class="reports-table">
+          <thead>
+            <tr>
+              <th scope="col">שם חומר</th>
+              <th scope="col">מדווח/ת</th>
+              <th scope="col">תאריך</th>
+              <th scope="col">סטטוס</th>
+              <th scope="col">הודעה</th>
+              <th scope="col">תגובה</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for report in reports %}
+              <tr>
+                <td class="reports-table__material">
+                  <bdi>{{ report.material.file_name }}</bdi>
+                  {% if report.material.file_path %}
+                    <div class="table-actions reports-table__material-actions">
+                      <button class="btn btn-ghost btn-compact" type="button" data-admin-preview="{{ report.material.id }}">תצוגה מקדימה</button>
+                      <a
+                        class="btn btn-ghost btn-compact"
+                        href="{{ url_for('admin_file', material_id=report.material.id) }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >הורדה</a>
+                    </div>
+                  {% endif %}
+                </td>
+                <td><span dir="auto">{{ report.reporter.email }}</span></td>
+                <td class="reports-table__date">{{ report.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+                <td>
+                  <span class="badge {% if report.status == 'answered' %}badge-answered{% else %}badge-open{% endif %}">
+                    {{ report.status_label }}
+                  </span>
+                </td>
+                <td class="reports-table__message">{{ report.message }}</td>
+                <td class="reports-table__reply">
+                  {% if report.admin_reply %}
+                    <p class="reports-table__saved-reply">{{ report.admin_reply }}</p>
+                  {% endif %}
+                  <form class="reports-reply-form" action="{{ url_for('reply_report', report_id=report.id) }}" method="post">
+                    {% include "partials/csrf.html" %}
+                    <label class="sr-only" for="reply-{{ report.id }}">תגובה ל{{ report.reporter.email }}</label>
+                    <textarea id="reply-{{ report.id }}" name="reply" rows="2" required placeholder="כתוב/י עדכון ישיר לסטודנט/ית."></textarea>
+                    <button class="btn btn-primary btn-compact" type="submit">שליחת עדכון</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     {% else %}
       <p class="empty-state">אין דיווחים מסטודנטים.</p>
     {% endif %}
@@ -435,7 +468,7 @@
       <button class="btn btn-ghost" type="button" data-close-modal>סגירה</button>
     </div>
     <div class="preview-frame" data-preview-frame>לא קיים קובץ שמור לרשומה זו.</div>
-    <a class="btn btn-primary hidden" data-modal-download href="#">הורדה</a>
+    <a class="btn btn-primary hidden" data-modal-download href="#" target="_blank" rel="noopener noreferrer">הורדה</a>
   </div>
 </div>
 {% endblock %}
