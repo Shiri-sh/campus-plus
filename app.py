@@ -306,10 +306,12 @@ def material_payload(material):
         preview_url = material.file_path
     elif material.file_path:
         preview_kind = "file"
-        preview_url = url_for(
-            "preview_material" if material.status == STATUS_APPROVED else "admin_file",
-            material_id=material.id,
+        preview_endpoint = (
+            "preview_material"
+            if material.status == STATUS_APPROVED
+            else "admin_preview_material"
         )
+        preview_url = url_for(preview_endpoint, material_id=material.id)
 
     download_url = ""
     if material.file_path:

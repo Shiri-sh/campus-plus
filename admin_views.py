@@ -140,6 +140,19 @@ def register_admin_routes(app, role_required, material_payload):
     def admin_material_details(material_id):
         return jsonify(material_payload(admin_material(material_id)))
 
+    @app.route("/admin/materials/<int:material_id>/preview")
+    @role_required(ADMIN)
+    def admin_preview_material(material_id):
+        material = admin_material(material_id)
+        if not material.file_path:
+            abort(404)
+        if material.is_link:
+            return redirect(material.file_path)
+        return send_from_directory(
+            current_app.config["UPLOAD_FOLDER"],
+            Path(material.file_path).name,
+        )
+
     @app.route("/admin/materials/<int:material_id>/file")
     @role_required(ADMIN)
     def admin_file(material_id):
