@@ -7,9 +7,7 @@
 
 ## 0. How to read this document
 
-- ✅ = Already implemented and working in the repo
-- 🔧 = Partially implemented — needs changes or additions
-- ❌ = Not started — required by the teacher
+Implementation progress is tracked in [GitHub issues and pull requests](https://github.com/Shiri-sh/campus-plus). This document describes design and where requirements are implemented.
 
 Each section maps back to the teacher's requirement number in parentheses.
 
@@ -42,34 +40,34 @@ Each section maps back to the teacher's requirement number in parentheses.
 
 ### Functional Requirements
 
-| # | Requirement | Status | Where / Notes |
-|---|---|---|---|
-| 1 | Choose a topic | ✅ | Academic study materials for JCT students |
-| 2 | User management with authentication | ✅ | `app.py` — login/register with email + password, `flask-login` session |
-| 3 | At least two user types | ✅ | Student and Admin roles (models.py) |
-| 4.1 | Data search | 🔧 | Text search works (`catalog.py`) across the full catalog. **Missing:** hybrid search — Chroma semantic hits for the embedded seed batch (and later approved uploads) merged with SQL keyword hits. |
-| 4.2 | Show details for a result | ✅ | Item Details Modal with metadata, preview, download (`student_dashboard.html`) |
-| 4.3 | Display data in a table | ✅ | Admin Pending Approvals table (`admin.html`) |
-| 4.4 | Dashboard with KPIs | ✅ | Admin KPI cards — pending count, open reports, course distribution (`admin.html`) |
-| 4.5 | Data entry | ✅ | Student upload workflow with classification (`upload.html`, `app.py`) |
-| 5 | Independent AI agent process | ❌ | **Must build:** background worker on the demo machine. It reads **pending student uploads** from somee.com, embeds them in local Chroma, verifies via Tavily, and writes confidence + recommendation. Seed rows are already approved and are out of this queue. |
+| # | Requirement | Where / Notes |
+|---|---|---|
+| 1 | Choose a topic | Academic study materials for JCT students |
+| 2 | User management with authentication | `app.py` — login/register with email + password, `flask-login` session |
+| 3 | At least two user types | Student and Admin roles (models.py) |
+| 4.1 | Data search | Text search works (`catalog.py`) across the full catalog. **Missing:** hybrid search — Chroma semantic hits for the embedded seed batch (and later approved uploads) merged with SQL keyword hits. |
+| 4.2 | Show details for a result | Item Details Modal with metadata, preview, download (`student_dashboard.html`) |
+| 4.3 | Display data in a table | Admin Pending Approvals table (`admin.html`) |
+| 4.4 | Dashboard with KPIs | Admin KPI cards — pending count, open reports, course distribution (`admin.html`) |
+| 4.5 | Data entry | Student upload workflow with classification (`upload.html`, `app.py`) |
+| 5 | Independent AI agent process | **Must build:** background worker on the demo machine. It reads **pending student uploads** from somee.com, embeds them in local Chroma, verifies via Tavily, and writes confidence + recommendation. Seed rows are already approved and are out of this queue. |
 
 ### Non-Functional Requirements
 
-| # | Requirement | Status | Where / Notes |
-|---|---|---|---|
-| 1 | Organized MD documents | 🔧 | `README.md` exists but minimal. **Must add:** `INITIAL_PLANNING.md` (done), this file, architecture doc |
-| 2 | Use ≥1 Skill from Skills.sh | ❌ | **Must install and use** a Skill from [skills.sh](https://skills.sh) |
-| 3 | Define ≥1 custom Skill + ≥1 Rule | 🔧 | Skill exists at `.cursor/skills/draft-issues/SKILL.md`. **Must add:** at least one `.cursor/rules/` Rule file |
-| 4 | Flask application server | ✅ | `app.py` — Flask 3.1.2 |
-| 5 | Cloud database (somee.com) | ❌ | Currently SQLite. **Must migrate to MSSQL on somee.com** |
-| 6 | Vector DB + semantic search | ❌ | **Must add:** local ChromaDB on the demo machine + Gemini `text-embedding-004`. Checked against the course PDF (9 Sep 2026): a vector DB and semantic search are required; cloud hosting is required for the relational database only. |
-| 7 | MVC/CQRS architecture | 🔧 | MVC is already there (models, templates, routes). CQRS is the course diagram: the UI sends reads to a query model and writes to a command model, both on one database. **No prescribed folder names.** Reads stay in `catalog.py`. Writes become command functions. Routes stay in `app.py` and `admin_views.py`. |
-| 8 | Event Sourcing pattern | ❌ | **Append-only `Event` audit log** on somee.com, written on every state change. The `Material` row stays the source of truth. No replay, no projections rebuilt from events. |
-| 9 | External services via MCP | ❌ | **Must integrate:** Tavily MCP + Gmail MCP |
-| 10 | ≥2 MCP Tools via MCP Studio | ❌ | **Must develop:** two tools (see §5 below) |
-| 11 | AI agent with Deep Agent + RAG + Tavily | ❌ | **Must build:** agent script using Gemini + ChromaDB + Tavily |
-| 12 | GitHub Repo | ✅ | [Shiri-sh/campus-plus](https://github.com/Shiri-sh/campus-plus) |
+| # | Requirement | Where / Notes |
+|---|---|---|
+| 1 | Organized MD documents | `README.md` exists but minimal. **Must add:** `INITIAL_PLANNING.md` (done), this file, architecture doc |
+| 2 | Use ≥1 Skill from Skills.sh | **Must install and use** a Skill from [skills.sh](https://skills.sh) |
+| 3 | Define ≥1 custom Skill + ≥1 Rule | Skill exists at `.cursor/skills/draft-issues/SKILL.md`. **Must add:** at least one `.cursor/rules/` Rule file |
+| 4 | Flask application server | `app.py` — Flask 3.1.2 |
+| 5 | Cloud database (somee.com) | Currently SQLite. **Must migrate to MSSQL on somee.com** |
+| 6 | Vector DB + semantic search | **Must add:** local ChromaDB on the demo machine + Gemini `text-embedding-004`. Checked against the course PDF (9 Sep 2026): a vector DB and semantic search are required; cloud hosting is required for the relational database only. |
+| 7 | MVC/CQRS architecture | MVC is already there (models, templates, routes). CQRS is the course diagram: the UI sends reads to a query model and writes to a command model, both on one database. **No prescribed folder names.** Reads stay in `catalog.py`. Writes become command functions. Routes stay in `app.py` and `admin_views.py`. |
+| 8 | Event Sourcing pattern | **Append-only `Event` audit log** on somee.com, written on every state change. The `Material` row stays the source of truth. No replay, no projections rebuilt from events. |
+| 9 | External services via MCP | **Must integrate:** Tavily MCP + Gmail MCP |
+| 10 | ≥2 MCP Tools via MCP Studio | **Must develop:** two tools (see §5 below) |
+| 11 | AI agent with Deep Agent + RAG + Tavily | **Must build:** agent script using Gemini + ChromaDB + Tavily |
+| 12 | GitHub Repo | [Shiri-sh/campus-plus](https://github.com/Shiri-sh/campus-plus) |
 
 ---
 
@@ -265,6 +263,8 @@ Command functions take ids and fields, not `request`. That is what lets Person A
 ---
 
 ## 8. Remaining tasks — ordered by priority
+
+Historical task breakdown; completion tracked in [GitHub issues and pull requests](https://github.com/Shiri-sh/campus-plus).
 
 > **Legend:** 🔴 Blocks submission · 🟡 Important · 🟢 Nice to have
 
