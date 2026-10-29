@@ -17,6 +17,7 @@ USER_REGISTERED = "UserRegistered"
 USER_BLOCKED = "UserBlocked"
 USER_UNBLOCKED = "UserUnblocked"
 USER_DELETED = "UserDeleted"
+USER_ROLE_CHANGED = "UserRoleChanged"
 MATERIAL_UPLOADED = "MaterialUploaded"
 MATERIAL_APPROVED = "MaterialApproved"
 MATERIAL_REJECTED = "MaterialRejected"
@@ -31,6 +32,7 @@ EVENT_TYPES = frozenset({
     USER_BLOCKED,
     USER_UNBLOCKED,
     USER_DELETED,
+    USER_ROLE_CHANGED,
     MATERIAL_UPLOADED,
     MATERIAL_APPROVED,
     MATERIAL_REJECTED,

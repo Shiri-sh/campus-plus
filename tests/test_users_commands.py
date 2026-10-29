@@ -2,8 +2,20 @@ from datetime import date, datetime
 
 import pytest
 
-from commands.users import delete_user, register_user, set_blocked
-from events import USER_BLOCKED, USER_DELETED, USER_REGISTERED, USER_UNBLOCKED
+from commands.users import (
+    create_user_by_admin,
+    delete_user,
+    register_user,
+    set_blocked,
+    set_user_role,
+)
+from events import (
+    USER_BLOCKED,
+    USER_DELETED,
+    USER_REGISTERED,
+    USER_ROLE_CHANGED,
+    USER_UNBLOCKED,
+)
 from extensions import db
 from models import ADMIN, STATUS_PENDING, STUDENT, Course, Event, Material, Report, User
 
@@ -94,3 +106,52 @@ def test_user_commands_reject_a_missing_row(app_context):
         set_blocked(999, None, True)
     with pytest.raises(LookupError):
         delete_user(999, None)
+    with pytest.raises(LookupError):
+        set_user_role(999, STUDENT, None)
+
+
+def test_create_user_by_admin_records_actor_and_role(app_context):
+    admin = User(email="admin@jct.ac.il", password_hash="hash", role=ADMIN)
+    db.session.add(admin)
+    db.session.commit()
+
+    created = create_user_by_admin("new-admin@jct.ac.il", "secret-pass", ADMIN, admin.id)
+
+    assert created.role == ADMIN
+    assert created.check_password("secret-pass")
+    event = Event.query.filter_by(event_type=USER_REGISTERED, entity_id=created.id).one()
+    assert event.actor_id == admin.id
+
+
+def test_set_user_role_promotes_and_demotes_with_audit(app_context):
+    admin = User(email="admin@jct.ac.il", password_hash="hash", role=ADMIN)
+    student = User(email="student@jct.ac.il", password_hash="hash", role=STUDENT)
+    db.session.add_all([admin, student])
+    db.session.commit()
+
+    promoted = set_user_role(student.id, ADMIN, admin.id)
+    assert promoted.role == ADMIN
+    changed = Event.query.filter_by(event_type=USER_ROLE_CHANGED, entity_id=student.id).one()
+    assert changed.actor_id == admin.id
+
+    demoted = set_user_role(student.id, STUDENT, admin.id)
+    assert demoted.role == STUDENT
+
+
+def test_set_user_role_rejects_demoting_the_last_admin(app_context):
+    admin = User(email="admin@jct.ac.il", password_hash="hash", role=ADMIN)
+    db.session.add(admin)
+    db.session.commit()
+
+    with pytest.raises(ValueError, match="last admin"):
+        set_user_role(admin.id, STUDENT, admin.id)
+
+
+def test_create_user_by_admin_rejects_duplicate_email(app_context):
+    admin = User(email="admin@jct.ac.il", password_hash="hash", role=ADMIN)
+    db.session.add(admin)
+    db.session.commit()
+    create_user_by_admin("peer@jct.ac.il", "secret-pass", ADMIN, admin.id)
+
+    with pytest.raises(ValueError, match="already registered"):
+        create_user_by_admin("peer@jct.ac.il", "other-pass", ADMIN, admin.id)

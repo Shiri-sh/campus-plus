@@ -797,6 +797,195 @@ tr:last-child td {
   gap: 6px;
 }
 
+/* Admin — user library */
+.users-panel {
+  background: var(--bg);
+  border: 0;
+  box-shadow: none;
+}
+
+.users-library {
+  padding: 4px 0 8px;
+}
+
+.users-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(18, 35, 58, 0.05), 0 4px 16px rgba(18, 35, 58, 0.04);
+  padding: 22px 24px 24px;
+}
+
+.users-card__title {
+  margin: 0 0 18px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.users-create-form {
+  display: grid;
+  gap: 18px;
+}
+
+.users-create-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+  max-width: 520px;
+}
+
+.users-create-form__actions {
+  max-width: 520px;
+}
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-icon .input-icon {
+  position: absolute;
+  inset-inline-start: 12px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.input-with-icon input {
+  padding-inline-start: 40px;
+}
+
+.users-divider {
+  margin: 28px 0 24px;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.users-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(18, 35, 58, 0.05);
+  overflow-x: auto;
+}
+
+.users-table {
+  min-width: 720px;
+}
+
+.users-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.users-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.users-table__email {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.users-table__login {
+  font-size: 0.88rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.users-table__muted {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.users-table__empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 32px 16px !important;
+}
+
+.users-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.badge-admin {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+
+.badge-student {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.badge-blocked {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.users-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.users-actions form {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.users-actions__role select {
+  min-width: 7.5rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  background: #fff;
+}
+
+.users-actions__role select:focus {
+  outline: 2px solid #9ad3de;
+  border-color: var(--primary);
+}
+
+.btn-compact {
+  padding: 7px 11px;
+  font-size: 0.82rem;
+  border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .users-create-form__grid {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+
+  .users-create-form__actions {
+    max-width: 100%;
+  }
+
+  .users-card {
+    padding: 18px 16px 20px;
+  }
+}
+
 .report-list,
 .user-list {
   display: grid;

@@ -19,7 +19,12 @@ from commands.materials import (
     update_material as update_material_record,
 )
 from commands.reports import reply_to_report
-from commands.users import delete_user as delete_user_record, set_blocked
+from commands.users import (
+    create_user_by_admin,
+    delete_user as delete_user_record,
+    set_blocked,
+    set_user_role,
+)
 from extensions import db
 from models import (
     ADMIN,
@@ -28,6 +33,7 @@ from models import (
     STATUS_APPROVED,
     STATUS_LABELS,
     STATUS_REJECTED,
+    STUDENT,
     Material,
     Report,
     User,
@@ -215,6 +221,52 @@ def register_admin_routes(app, role_required, material_payload):
             "success",
         )
         return admin_redirect("reports")
+
+    @app.route("/admin/users/create", methods=["POST"])
+    @role_required(ADMIN)
+    def create_admin_user():
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
+        if len(password) < 8:
+            flash("הסיסמה חייבת להכיל לפחות 8 תווים.", "error")
+            return admin_redirect("users")
+        if User.query.filter_by(email=email).first():
+            flash("כתובת דוא״ל מוסדית זו כבר רשומה במערכת.", "error")
+            return admin_redirect("users")
+        try:
+            create_user_by_admin(email, password, ADMIN, current_user.id)
+        except ValueError as exc:
+            flash(str(exc), "error")
+            return admin_redirect("users")
+        flash(f"נוצר/ה מנהל/ת: {email}.", "success")
+        return admin_redirect("users")
+
+    @app.route("/admin/users/<int:user_id>/role", methods=["POST"])
+    @role_required(ADMIN)
+    def change_user_role(user_id):
+        if user_id == current_user.id:
+            flash("לא ניתן לשנות את התפקיד שלך ממסך זה.", "error")
+            return admin_redirect("users")
+        role = request.form.get("role") or ""
+        if role not in (STUDENT, ADMIN):
+            flash("יש לבחור תפקיד תקף.", "error")
+            return admin_redirect("users")
+        user = db.session.get(User, user_id)
+        if user is None:
+            abort(404)
+        try:
+            user = set_user_role(user.id, role, current_user.id)
+        except ValueError as exc:
+            if str(exc) == "cannot demote the last admin":
+                flash("לא ניתן להסיר את המנהל/ת האחרון/ה.", "error")
+            else:
+                flash(str(exc), "error")
+            return admin_redirect("users")
+        flash(
+            f"עודכן תפקיד {user.email} ל{'מנהל/ת' if user.role == ADMIN else 'סטודנט/ית'}.",
+            "success",
+        )
+        return admin_redirect("users")
 
     @app.route("/admin/users/<int:user_id>/block", methods=["POST"])
     @role_required(ADMIN)

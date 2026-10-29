@@ -40,7 +40,6 @@ from models import (
     ACADEMIC_YEARS,
     FILE_TYPES,
     MATERIAL_TYPES,
-    ROLES,
     STATUS_APPROVED,
     STUDENT,
     Course,
@@ -180,11 +179,6 @@ def register():
     email = normalize_email(request.form.get("email"))
     password = request.form.get("password") or ""
     confirm_password = request.form.get("confirm_password") or ""
-    role = request.form.get("role") or ""
-
-    if role not in ROLES:
-        flash("יש לבחור תפקיד: סטודנט/ית או מנהל/ת.", "error")
-        return render_template("auth.html", active_tab="register", form_email=email)
 
     if len(password) < 8:
         flash("הסיסמה חייבת להכיל לפחות 8 תווים.", "error")
@@ -198,7 +192,7 @@ def register():
         flash("כתובת דוא״ל מוסדית זו כבר רשומה במערכת.", "error")
         return render_template("auth.html", active_tab="register", form_email=email)
 
-    user = register_user(email, password, role)
+    user = register_user(email, password, STUDENT)
     login_user(user)
     return redirect(home_for(user))
 
