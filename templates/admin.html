@@ -242,130 +242,189 @@
     </div>
   </section>
 
-  <section class="panel {% if active_tab != 'materials' %}hidden{% endif %}" data-tab-panel-group="admin" data-tab-panel="materials">
-    <form class="header-search materials-search" action="{{ url_for('admin') }}" method="get" data-omit-empty>
-      <input type="hidden" name="tab" value="materials" />
-      <label class="sr-only" for="admin-material-search">חיפוש חומרים</label>
-      <div class="search-input-wrap">
-        <input
-          id="admin-material-search"
-          type="search"
-          name="q"
-          dir="auto"
-          value="{{ material_filters.q }}"
-          placeholder="שם קובץ, קורס או מרצה"
-        />
-        <button class="btn btn-primary" type="submit">חיפוש</button>
-      </div>
-      <div class="materials-filters">
-        <div class="field">
-          <label for="filter-course">קורס</label>
-          <select id="filter-course" name="course" data-submit-on-change>
-            <option value="">כל הקורסים</option>
-            {% for course in courses %}
-              <option value="{{ course.id }}" {% if material_filters.course == course.id|string %}selected{% endif %}>{{ course.name }}</option>
-            {% endfor %}
-          </select>
+  <section class="panel materials-panel {% if active_tab != 'materials' %}hidden{% endif %}" data-tab-panel-group="admin" data-tab-panel="materials">
+    <div class="materials-toolbar">
+      <form class="header-search materials-search" action="{{ url_for('admin') }}" method="get" data-omit-empty>
+        <input type="hidden" name="tab" value="materials" />
+        <label class="sr-only" for="admin-material-search">חיפוש חומרים</label>
+        <div class="search-input-wrap">
+          <input
+            id="admin-material-search"
+            type="search"
+            name="q"
+            dir="auto"
+            value="{{ material_filters.q }}"
+            placeholder="שם קובץ, קורס או מרצה"
+          />
+          <button class="btn btn-primary" type="submit">חיפוש</button>
         </div>
-        <div class="field">
-          <label for="filter-year">שנה אקדמית</label>
-          <select id="filter-year" name="year" data-submit-on-change>
-            <option value="">כל השנים</option>
-            {% for year in years %}
-              <option value="{{ year }}" {% if material_filters.year == year|string %}selected{% endif %}>{{ hebrew_year(year) }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="field">
-          <label for="filter-type">סוג חומר</label>
-          <select id="filter-type" name="type" data-submit-on-change>
-            <option value="">כל הסוגים</option>
-            {% for value, label in material_types %}
-              <option value="{{ value }}" {% if material_filters.type == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="field">
-          <label for="filter-status">סטטוס</label>
-          <select id="filter-status" name="status" data-submit-on-change>
-            <option value="">מאושרים ודחויים</option>
-            {% for value, label in status_filters %}
-              <option value="{{ value }}" {% if material_filters.status == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        {% if filters_active %}
-          <div class="materials-filter-actions">
-            <a class="btn btn-ghost" href="{{ url_for('admin', tab='materials') }}">ניקוי סינון</a>
+        <div class="materials-filters">
+          <div class="field">
+            <label for="filter-course">קורס</label>
+            <select id="filter-course" name="course" data-submit-on-change>
+              <option value="">כל הקורסים</option>
+              {% for course in courses %}
+                <option value="{{ course.id }}" {% if material_filters.course == course.id|string %}selected{% endif %}>{{ course.name }}</option>
+              {% endfor %}
+            </select>
           </div>
-        {% endif %}
-      </div>
-    </form>
-    {% if materials_truncated %}
-      <p class="field-hint">מוצגים {{ materials|length }} חומרים ראשונים. צמצמו את החיפוש כדי לראות את השאר.</p>
-    {% endif %}
-    {% if materials %}
-      {% for material in materials %}
-        <article class="report-item">
-          <div>
-            <h3><bdi>{{ material.file_name }}</bdi></h3>
-            <p>{{ material.course.name }} · {{ hebrew_year(material.academic_year) }} · {{ material.material_type_label }} · {{ material.status_label }}</p>
-            <form class="prediction-grid" action="{{ url_for('update_material', material_id=material.id) }}" method="post">
-              {% include "partials/csrf.html" %}
-              {% include "partials/admin_search_filters.html" %}
-              <div class="field">
-                <label for="name-{{ material.id }}">שם קובץ</label>
-                <input id="name-{{ material.id }}" name="file_name" dir="auto" value="{{ material.file_name }}" />
-              </div>
-              <div class="field">
-                <label for="course-{{ material.id }}">קורס</label>
-                <select id="course-{{ material.id }}" name="course_id">
-                  {% for course in courses %}
-                    <option value="{{ course.id }}" {% if course.id == material.course_id %}selected{% endif %}>{{ course.name }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="field">
-                <label for="year-{{ material.id }}">שנה אקדמית</label>
-                <select id="year-{{ material.id }}" name="academic_year">
-                  {% if material.academic_year not in years %}
-                    <option value="{{ material.academic_year }}" selected>{{ hebrew_year(material.academic_year) }}</option>
-                  {% endif %}
-                  {% for year in years %}
-                    <option value="{{ year }}" {% if year == material.academic_year %}selected{% endif %}>{{ hebrew_year(year) }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="field">
-                <label for="type-{{ material.id }}">סוג חומר</label>
-                <select id="type-{{ material.id }}" name="material_type">
-                  {% for value, label in material_types %}
-                    <option value="{{ value }}" {% if value == material.material_type %}selected{% endif %}>{{ label }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="field">
-                <label for="lecturer-{{ material.id }}">מרצה</label>
-                <input id="lecturer-{{ material.id }}" name="lecturer" value="{{ material.lecturer or '' }}" />
-              </div>
-              <div class="file-actions">
-                <button class="btn btn-primary" type="submit">שמירת סיווג</button>
-              </div>
-            </form>
+          <div class="field">
+            <label for="filter-year">שנה אקדמית</label>
+            <select id="filter-year" name="year" data-submit-on-change>
+              <option value="">כל השנים</option>
+              {% for year in years %}
+                <option value="{{ year }}" {% if material_filters.year == year|string %}selected{% endif %}>{{ hebrew_year(year) }}</option>
+              {% endfor %}
+            </select>
           </div>
-          <div class="table-actions">
-            <button class="btn btn-ghost" type="button" data-admin-preview="{{ material.id }}">תצוגה מקדימה</button>
-            <form action="{{ url_for('delete_material', material_id=material.id) }}" method="post">
-              {% include "partials/csrf.html" %}
-              {% include "partials/admin_search_filters.html" %}
-              <button class="btn btn-danger" type="submit">מחיקה</button>
-            </form>
+          <div class="field">
+            <label for="filter-type">סוג חומר</label>
+            <select id="filter-type" name="type" data-submit-on-change>
+              <option value="">כל הסוגים</option>
+              {% for value, label in material_types %}
+                <option value="{{ value }}" {% if material_filters.type == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
           </div>
-        </article>
-      {% endfor %}
-    {% else %}
-      <p class="empty-state">לא נמצאו חומרים תואמים.</p>
-    {% endif %}
+          <div class="field">
+            <label for="filter-status">סטטוס</label>
+            <select id="filter-status" name="status" data-submit-on-change>
+              <option value="">מאושרים ודחויים</option>
+              {% for value, label in status_filters %}
+                <option value="{{ value }}" {% if material_filters.status == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if filters_active %}
+            <div class="materials-filter-actions">
+              <a class="btn btn-ghost" href="{{ url_for('admin', tab='materials') }}">ניקוי סינון</a>
+            </div>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+    <div class="materials-table-section">
+      {% if materials_truncated %}
+        <p class="materials-table-note field-hint">מוצגים {{ materials|length }} חומרים ראשונים. צמצמו את החיפוש כדי לראות את השאר.</p>
+      {% endif %}
+      {% if materials %}
+        {% for material in materials %}
+          <form
+            id="material-update-{{ material.id }}"
+            class="materials-update-form"
+            action="{{ url_for('update_material', material_id=material.id) }}"
+            method="post"
+          >
+            {% include "partials/csrf.html" %}
+            {% include "partials/admin_search_filters.html" %}
+          </form>
+        {% endfor %}
+        <div class="materials-table-wrap">
+          <table class="materials-table">
+            <thead>
+              <tr>
+                <th scope="col">שם קובץ</th>
+                <th scope="col">קורס</th>
+                <th scope="col">שנה</th>
+                <th scope="col">סוג</th>
+                <th scope="col">מרצה</th>
+                <th scope="col">סטטוס</th>
+                <th scope="col">פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for material in materials %}
+                <tr>
+                  <td class="materials-table__name">
+                    <label class="sr-only" for="name-{{ material.id }}">שם קובץ</label>
+                    <input
+                      id="name-{{ material.id }}"
+                      class="materials-table__control"
+                      form="material-update-{{ material.id }}"
+                      name="file_name"
+                      dir="auto"
+                      value="{{ material.file_name }}"
+                    />
+                  </td>
+                  <td>
+                    <label class="sr-only" for="course-{{ material.id }}">קורס</label>
+                    <select
+                      id="course-{{ material.id }}"
+                      class="materials-table__control materials-table__control--course"
+                      form="material-update-{{ material.id }}"
+                      name="course_id"
+                    >
+                      {% for course in courses %}
+                        <option value="{{ course.id }}" {% if course.id == material.course_id %}selected{% endif %}>{{ course.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  <td>
+                    <label class="sr-only" for="year-{{ material.id }}">שנה אקדמית</label>
+                    <select
+                      id="year-{{ material.id }}"
+                      class="materials-table__control"
+                      form="material-update-{{ material.id }}"
+                      name="academic_year"
+                    >
+                      {% if material.academic_year not in years %}
+                        <option value="{{ material.academic_year }}" selected>{{ hebrew_year(material.academic_year) }}</option>
+                      {% endif %}
+                      {% for year in years %}
+                        <option value="{{ year }}" {% if year == material.academic_year %}selected{% endif %}>{{ hebrew_year(year) }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  <td>
+                    <label class="sr-only" for="type-{{ material.id }}">סוג חומר</label>
+                    <select
+                      id="type-{{ material.id }}"
+                      class="materials-table__control"
+                      form="material-update-{{ material.id }}"
+                      name="material_type"
+                    >
+                      {% for value, label in material_types %}
+                        <option value="{{ value }}" {% if value == material.material_type %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  <td>
+                    <label class="sr-only" for="lecturer-{{ material.id }}">מרצה</label>
+                    <input
+                      id="lecturer-{{ material.id }}"
+                      class="materials-table__control"
+                      form="material-update-{{ material.id }}"
+                      name="lecturer"
+                      dir="auto"
+                      value="{{ material.lecturer or '' }}"
+                      placeholder="מרצה"
+                    />
+                  </td>
+                  <td>
+                    <span class="badge {% if material.status == 'approved' %}badge-approved{% elif material.status == 'rejected' %}badge-rejected{% endif %}">
+                      {{ material.status_label }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <button class="btn btn-primary btn-compact" type="submit" form="material-update-{{ material.id }}">שמירת סיווג</button>
+                      <button class="btn btn-ghost btn-compact" type="button" data-admin-preview="{{ material.id }}">תצוגה מקדימה</button>
+                      <form action="{{ url_for('delete_material', material_id=material.id) }}" method="post">
+                        {% include "partials/csrf.html" %}
+                        {% include "partials/admin_search_filters.html" %}
+                        <button class="btn btn-danger btn-compact" type="submit">מחיקה</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="empty-state">לא נמצאו חומרים תואמים.</p>
+      {% endif %}
+    </div>
   </section>
 </main>
 
