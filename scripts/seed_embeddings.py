@@ -23,26 +23,14 @@ load_dotenv(ROOT / ".env")
 
 from flask import Flask
 
-from agent.embeddings import upsert_material
+from agent.embeddings import material_document, upsert_material
 from db_config import resolve_database_url
 from extensions import db
-from models import STATUS_APPROVED, Material, hebrew_year
+from models import STATUS_APPROVED, Material
 
 SEED_MIN = 80
 SEED_MAX = 100
 EMBED_SLEEP_SECONDS = 1.05
-
-
-def material_document(material):
-    course_name = material.course.name if material.course else ""
-    return " ".join(
-        [
-            material.file_name or "",
-            course_name,
-            hebrew_year(material.academic_year),
-            material.material_type or "",
-        ]
-    ).strip()
 
 
 def select_seed_materials(materials, limit=SEED_MAX):
@@ -97,10 +85,12 @@ def main():
                 flush=True,
             )
         stored = 0
+        has_key = bool((os.environ.get("GEMINI_API_KEY") or "").strip())
         for material in selected:
             if upsert_material(material.id, material_document(material)):
                 stored += 1
-            time.sleep(EMBED_SLEEP_SECONDS)
+            if has_key:
+                time.sleep(EMBED_SLEEP_SECONDS)
         print(f"Upserted {stored} of {len(selected)} seed vectors.", flush=True)
 
 

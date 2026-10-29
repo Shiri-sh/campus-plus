@@ -83,8 +83,10 @@ Run the app:
 
 ```bash
 python app.py                    # Flask on http://127.0.0.1:5000
-python -m agent.worker           # AI worker (separate terminal)
+python -m agent.worker           # AI worker (separate terminal; optional --once)
 ```
+
+The worker polls `status=pending` uploads that still have no `ai_summary`. It writes `confidence`, `ai_recommendation`, and `ai_summary` and records `AIEvaluationCompleted`. It never approves or rejects; admins still do that. Sleep interval: `WORKER_POLL_SECONDS` (default 30). Seed rows stay out of the queue because they are already approved.
 
 Run the tests from the repo root. The suite uses an in-memory SQLite database and does not call external services. Pull requests and pushes to `main` run this same command in GitHub Actions:
 
