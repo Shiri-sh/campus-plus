@@ -7,11 +7,11 @@ An intelligent academic materials platform for JCT students — upload, discover
 ## What it does
 
 - **Smart catalog** — browse, search, and preview thousands of academic materials organized by course, year, and type. Imported files with no detectable year keep `academic_year = 0` and show as לא ידוע in the student explorer and admin year menu.
-- **Hybrid search** — combines SQL keyword matching with Gemini-powered semantic search (ChromaDB) for results that understand what you mean, not just what you typed
+- **Hybrid search** — `catalog.approved_materials` and `/student/suggest` run SQL keyword matching and Chroma semantic hits together, then merge by material id. Course, year, and type filters apply to both sides. If Chroma or Gemini is unavailable, keyword results still return.
 - **AI content agent** — a background worker evaluates every new upload: extracts text, verifies relevance via Tavily, generates a summary, and recommends approve/reject to admins
 - **Upload with live classification** — students upload files and get instant course/type predictions before submitting
 - **Admin dashboard** — KPI cards, pending approval queue, content reports, and user management in one view
-- **MCP tool integration** — Tavily web search and Gmail notifications built as MCP Studio tools
+- **MCP tool integration** — Tavily web search (`python -m mcp_tools.tavily_search.server`) and Gmail notifications (`python -m mcp_tools.gmail_alert.server`) built as MCP Studio tools
 
 ## Architecture
 

@@ -1,0 +1,45 @@
+{
+  "name": "tavily_search",
+  "description": "Search the web with Tavily to verify that uploaded study material matches academic topics.",
+  "inputSchema": {
+    "type": "object",
+    "required": ["query"],
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "Search query, usually course name plus file title"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": ["ok", "confirmation"],
+    "properties": {
+      "ok": {
+        "type": "boolean",
+        "description": "Whether the search (or stub) completed without raising"
+      },
+      "confirmation": {
+        "type": "string",
+        "description": "Result summary or error detail"
+      },
+      "mode": {
+        "type": "string",
+        "enum": ["tavily", "stub", "error"],
+        "description": "tavily when the API ran, stub when the key is missing, error on failure"
+      },
+      "results": {
+        "type": "array",
+        "description": "Top search hits with title, url, and snippet",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "url": {"type": "string"},
+            "snippet": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}
