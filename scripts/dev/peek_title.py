@@ -1,7 +1,7 @@
 from pathlib import Path
 import re
 
-html = Path(__file__).resolve().parents[1].joinpath("instance/drive_root.html").read_text(encoding="utf-8")
+html = Path(__file__).resolve().parents[2].joinpath("instance/drive_root.html").read_text(encoding="utf-8")
 # grab a few complete flip-entry chunks
 parts = html.split('class="flip-entry"')[1:4]
 for part in parts:
