@@ -58,6 +58,24 @@ flowchart TB
 | MCP Tools | Tavily search · Gmail alerts (built in MCP Studio) |
 | Frontend | Jinja2 templates · vanilla JS · CSS |
 
+## Repository layout
+
+Flask entry and shared modules (`app.py`, `admin_views.py`, `catalog.py`, `models.py`, `events.py`, …) live at the repo root. Main folders:
+
+```
+campus-plus/
+├── commands/       # writes (CQRS command side)
+├── agent/          # background worker + embeddings
+├── mcp_tools/      # Tavily + Gmail MCP tools
+├── scripts/        # Drive import, Chroma seed (+ dev/ helpers)
+├── templates/
+├── static/
+├── tests/
+└── docs/
+```
+
+Full tree with brief notes: [docs/LAYOUT.md](docs/LAYOUT.md).
+
 ## Quick start
 
 ```bash
@@ -103,3 +121,11 @@ python scripts/seed_embeddings.py         # embed 80-100 approved items into loc
 ```
 
 `scripts/seed_embeddings.py` writes collection `campus_materials` under `CHROMA_PERSIST_DIR` (default `instance/chroma`). One person runs it; everyone else copies that directory. It does not change material status or call Tavily. Hybrid search and the worker need this folder on the demo machine.
+
+## Documentation
+
+- [docs/LAYOUT.md](docs/LAYOUT.md) — repository tree (ASCII)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — deployment, CQRS/event log, request flows (extends this README without repeating it)
+- [AGENTS.md](AGENTS.md) — contributor and coding-agent workflow
+- [scripts/README.md](scripts/README.md) — operational scripts vs `scripts/dev/` helpers
+- MCP tools: [mcp_tools/README.md](mcp_tools/README.md) · [gmail_alert](mcp_tools/gmail_alert/README.md) · [tavily_search](mcp_tools/tavily_search/README.md)

@@ -1,7 +1,7 @@
 from pathlib import Path
 import re
 
-html = Path(__file__).resolve().parents[1].joinpath("instance/drive_root.html").read_text(encoding="utf-8")
+html = Path(__file__).resolve().parents[2].joinpath("instance/drive_root.html").read_text(encoding="utf-8")
 # find file and doc links with nearby text
 for pattern in [
     r"https://drive.google.com/file/d/[a-zA-Z0-9_-]+",
