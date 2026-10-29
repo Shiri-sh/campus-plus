@@ -4,6 +4,7 @@ from pathlib import Path
 
 from flask import current_app
 
+from agent.embeddings import material_document, upsert_material
 from classify import MATERIAL_TO_FILE_TYPE
 from events import (
     MATERIAL_APPROVED,
@@ -159,6 +160,10 @@ def approve_material(material_id, actor_id):
     material.status = STATUS_APPROVED
     db.session.commit()
     _record_material_event(MATERIAL_APPROVED, material, actor_id)
+    try:
+        upsert_material(material.id, material_document(material))
+    except Exception as error:
+        logger.warning("chroma upsert skipped after approve %s: %s", material.id, error)
     return material
 
 
