@@ -87,6 +87,18 @@ def materials_redirect():
     return redirect(url_for("admin", tab="materials", **filters))
 
 
+def admin_material_payload(material, material_payload):
+    """Admin preview modal must use admin routes, not student-only URLs."""
+    payload = material_payload(material)
+    if material.file_path:
+        payload["download_url"] = url_for("admin_file", material_id=material.id)
+    if material.file_path and not material.is_link:
+        payload["preview_url"] = url_for(
+            "admin_preview_material", material_id=material.id
+        )
+    return payload
+
+
 def register_admin_routes(app, role_required, material_payload):
     def admin_material(material_id):
         material = db.session.get(Material, material_id)
@@ -139,7 +151,8 @@ def register_admin_routes(app, role_required, material_payload):
     @app.route("/admin/materials/<int:material_id>")
     @role_required(ADMIN)
     def admin_material_details(material_id):
-        return jsonify(material_payload(admin_material(material_id)))
+        material = admin_material(material_id)
+        return jsonify(admin_material_payload(material, material_payload))
 
     @app.route("/admin/materials/<int:material_id>/preview")
     @role_required(ADMIN)

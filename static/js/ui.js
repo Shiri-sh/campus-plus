@@ -40,6 +40,12 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll(`[data-tab-panel-group="${group}"]`).forEach((panel) => {
         panel.classList.toggle("hidden", panel.dataset.tabPanel !== target);
       });
+
+      if (group === "admin" && target) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", target);
+        window.history.replaceState({}, "", url);
+      }
     });
   });
 
@@ -76,6 +82,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (download) {
       if (data.download_url) {
         download.href = data.download_url;
+        download.target = "_blank";
+        download.rel = "noopener noreferrer";
         download.classList.remove("hidden");
       } else {
         download.classList.add("hidden");
@@ -111,6 +119,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (data.download_url) {
         download.href = data.download_url;
+        download.target = "_blank";
+        download.rel = "noopener noreferrer";
         download.classList.remove("hidden");
       } else {
         download.classList.add("hidden");
