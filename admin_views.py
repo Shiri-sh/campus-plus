@@ -26,6 +26,7 @@ from commands.users import (
     set_user_role,
 )
 from extensions import db
+from link_download import link_download_target
 from models import (
     ADMIN,
     ACADEMIC_YEARS,
@@ -160,7 +161,7 @@ def register_admin_routes(app, role_required, material_payload):
         if not material.file_path:
             abort(404)
         if material.is_link:
-            return redirect(material.file_path)
+            return redirect(link_download_target(material.file_path))
         return send_from_directory(
             current_app.config["UPLOAD_FOLDER"],
             Path(material.file_path).name,

@@ -22,6 +22,7 @@ from flask import (
 from flask_login import current_user, login_required, login_user, logout_user
 from flask_wtf.csrf import CSRFError
 
+from link_download import link_download_target
 from catalog import (
     approved_materials,
     approved_years_for_course,
@@ -358,7 +359,7 @@ def download_material(material_id):
     if not material.file_path:
         abort(404)
     if material.is_link:
-        return redirect(material.file_path)
+        return redirect(link_download_target(material.file_path))
     return send_from_directory(
         app.config["UPLOAD_FOLDER"],
         Path(material.file_path).name,
