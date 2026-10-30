@@ -105,8 +105,6 @@
                 <th scope="col">שנה</th>
                 <th scope="col">סוג</th>
                 <th scope="col">מרצה</th>
-                <th scope="col">רלוונטיות</th>
-                <th scope="col">ביטחון</th>
                 {% if search_query %}
                   <th scope="col">התאמת חיפוש</th>
                 {% endif %}
@@ -125,8 +123,6 @@
                   <td>{{ hebrew_year(material.academic_year) }}</td>
                   <td>{{ material.material_type_label }}</td>
                   <td>{{ material.lecturer or "—" }}</td>
-                  <td>{{ relevance_label(material.confidence, material.ai_recommendation) }}</td>
-                  <td>{% if material.confidence is not none %}{{ material.confidence }}%{% else %}—{% endif %}</td>
                   {% if search_query %}
                     <td>{% if material.relevance is not none %}{{ material.relevance }}%{% else %}—{% endif %}</td>
                   {% endif %}
