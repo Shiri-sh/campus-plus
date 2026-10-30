@@ -65,6 +65,11 @@ Drive seed data is **not** live integration: `scripts/list_drive.py` → `instan
 1. Route in `app.py` calls `catalog.student_reports` for the logged-in student.
 2. Template shows status and `admin_reply` when present. No writes.
 
+### Admin reply to a report (write path)
+
+1. `admin_views` → `commands.reports.reply_to_report`.
+2. Row marked answered; Gmail notifies the reporting student (stub if no credentials). Mail failure does not roll back the reply.
+
 ### Student upload (write path)
 
 1. Route validates file, may call `classify.classify_source` for live preview (rule-based, no LLM).

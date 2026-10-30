@@ -12,7 +12,7 @@ An intelligent academic materials platform for JCT students — upload, discover
 - **Upload with live classification** — students see course/year/type (editable) plus read-only relevance, confidence, and summary before the file is sent to an admin. Approved catalog items show the stored summary (or «אין סיכום AI זמין») and confidence in the details modal.
 - **Report inbox** — students open `/student/reports` to see status and admin replies for their own reports.
 - **Admin dashboard** — KPI cards, pending approval queue with stored relevance/confidence and a summary eye icon, content reports, and user management
-- **MCP tool integration** — Tavily web search (`python -m mcp_tools.tavily_search.server`) and Gmail notifications (`python -m mcp_tools.gmail_alert.server`) built as MCP Studio tools. Gmail alerts fire after a pending upload, after a student content report, and to the uploader when an admin approves or rejects.
+- **MCP tool integration** — Tavily web search (`python -m mcp_tools.tavily_search.server`) and Gmail notifications (`python -m mcp_tools.gmail_alert.server`) built as MCP Studio tools. Gmail alerts fire after a pending upload, after a student content report, to the reporter when an admin replies, and to the uploader when an admin approves or rejects.
 
 ## Architecture
 
