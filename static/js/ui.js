@@ -108,10 +108,17 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       const data = await response.json();
+      if (!data.has_stored_ai_summary) {
+        return;
+      }
+      const summary = (data.ai_summary || "").trim();
+      if (!summary) {
+        return;
+      }
       const modal = document.getElementById("admin-summary-modal");
       const text = modal?.querySelector("[data-admin-summary-text]");
       if (text) {
-        text.textContent = data.ai_summary || "לא נוצר סיכום.";
+        text.textContent = summary;
       }
       modal?.classList.add("is-open");
     });

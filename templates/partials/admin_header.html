@@ -1,0 +1,27 @@
+<header class="app-header">
+  <div class="header-inner">
+    <a class="brand" href="{{ url_for('admin') }}">
+      <span class="brand-mark">+</span>
+      <span class="brand-name">Campus<span>+</span></span>
+    </a>
+    <span class="admin-title">ממשק ניהול</span>
+    <a class="btn btn-cta header-upload" href="{{ url_for('upload') }}">העלאת חומר חדש</a>
+    <div class="profile-chip">
+      <div class="avatar">{{ current_user.initials }}</div>
+      <div class="profile-meta">
+        <strong>{{ current_user.role_label }}</strong>
+        <span>{{ current_user.email }}</span>
+        <a class="logout-link" href="{{ url_for('logout') }}">התנתקות</a>
+      </div>
+    </div>
+  </div>
+</header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-bar">
+      {% for category, message in messages %}
+        <p class="alert alert-{{ category }}">{{ message }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}

@@ -16,6 +16,7 @@ from events import (
 from commands.notify import send_admin_mail, send_mail
 from extensions import db
 from models import (
+    ADMIN,
     ACADEMIC_YEARS,
     MATERIAL_TYPES,
     STATUS_APPROVED,
@@ -31,6 +32,8 @@ logger = logging.getLogger(__name__)
 
 def notify_admins_of_pending_upload(material, admin_approvals_url):
     uploader = material.uploader
+    if uploader is not None and uploader.role == ADMIN:
+        return []
     uploader_email = uploader.email if uploader else "—"
     subject = f"Campus+: חומר חדש ממתין לאישור — {material.file_name}"
     body = (
@@ -49,6 +52,8 @@ def notify_uploader_of_decision(material, student_url=None):
     uploader = material.uploader
     if uploader is None or not (uploader.email or "").strip():
         logger.info("gmail_alert: no uploader to notify for material %s", material.id)
+        return None
+    if uploader.role == ADMIN:
         return None
     course_name = material.course.name if material.course else "—"
     if material.status == STATUS_APPROVED:

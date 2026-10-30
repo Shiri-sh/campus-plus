@@ -116,6 +116,7 @@ def test_material_payload_uses_a_clear_empty_summary():
         payload = campus_app.material_payload(_payload_material())
 
     assert payload["ai_summary"] == campus_app.EMPTY_AI_SUMMARY
+    assert payload["has_stored_ai_summary"] is False
     assert payload["confidence"] is None
 
 
@@ -126,6 +127,7 @@ def test_material_payload_includes_summary_and_confidence():
         )
 
     assert payload["ai_summary"] == "סיכום על ניוטון"
+    assert payload["has_stored_ai_summary"] is True
     assert payload["confidence"] == 82
 
 
