@@ -47,7 +47,7 @@ Drive seed data is **not** live integration: `scripts/list_drive.py` → `instan
 | Command | `commands/materials.py`, `commands/reports.py`, `commands/users.py` | Mutations, side effects (Gmail MCP, embedding upsert on approve) |
 | Audit | `events.py` | `record_event()` after successful writes (and worker completion) |
 | Domain data | `models.py`, `courses.py`, `classify.py` | ORM, course name map, upload preview heuristics |
-| Infra | `extensions.py`, `db_config.py`, `schema.py`, `seed.py` | Flask extensions, DB URL, lightweight migrations, course catalog bootstrap |
+| Infra | `extensions.py`, `db_config.py`, `schema.py`, `seed.py` | Flask extensions, DB URL, lightweight migrations (including drop of leftover `material.file_type`), course catalog bootstrap |
 | Async AI | `agent/worker.py`, `agent/embeddings.py` | Poll pending uploads; Gemini summary; Tavily MCP; Chroma upsert |
 | MCP | `mcp_tools/gmail_alert`, `mcp_tools/tavily_search` | Schemas + JSON-RPC servers + shared tool logic |
 

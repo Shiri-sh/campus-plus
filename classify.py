@@ -4,20 +4,12 @@ from datetime import date
 from models import ACADEMIC_YEARS, MATERIAL_TYPES, Course
 
 TYPE_RULES = (
-    (("exam", "midterm", "final", "moed", "מבחן", "מבחנים", "מועד"), "exams", "exam"),
-    (("quiz", "exercise", "homework", "assignment", "sheet", "תרגיל", "תרגילים", "תרגול"), "quizzes", "exercise"),
-    (("summary", "summaries", "notes", "lecture", "סיכום", "סיכומים"), "summaries", "summary"),
-    (("slide", "slides", "presentation", "ppt", "מצגת", "מצגות"), "presentations", "presentation"),
-    (("recording", "video", "zoom", "link", "הקלטה", "הרצאה"), "recordings", "recording"),
+    (("exam", "midterm", "final", "moed", "מבחן", "מבחנים", "מועד"), "exams"),
+    (("quiz", "exercise", "homework", "assignment", "sheet", "תרגיל", "תרגילים", "תרגול"), "quizzes"),
+    (("summary", "summaries", "notes", "lecture", "סיכום", "סיכומים"), "summaries"),
+    (("slide", "slides", "presentation", "ppt", "מצגת", "מצגות"), "presentations"),
+    (("recording", "video", "zoom", "link", "הקלטה", "הרצאה"), "recordings"),
 )
-
-MATERIAL_TO_FILE_TYPE = {
-    "exams": "exam",
-    "quizzes": "exercise",
-    "summaries": "summary",
-    "presentations": "presentation",
-    "recordings": "recording",
-}
 
 ICON_BY_EXTENSION = {
     ".pdf": "pdf",
@@ -39,10 +31,10 @@ def tokenize(text):
 
 def predict_material_type(text):
     tokens = set(tokenize(text))
-    for keywords, material_type, file_type in TYPE_RULES:
+    for keywords, material_type in TYPE_RULES:
         if tokens.intersection(keywords):
-            return material_type, file_type, 86
-    return "summaries", "summary", 48
+            return material_type, 86
+    return "summaries", 48
 
 
 def predict_year(text):
@@ -74,7 +66,7 @@ def predict_course(text):
 def classify_source(text):
     course, course_confidence = predict_course(text)
     year, year_confidence = predict_year(text)
-    material_type, file_type, type_confidence = predict_material_type(text)
+    material_type, type_confidence = predict_material_type(text)
     confidence = int((course_confidence + year_confidence + type_confidence) / 3)
     looks_academic = bool(course) and type_confidence >= 86
     if looks_academic:
@@ -89,7 +81,6 @@ def classify_source(text):
         "academic_year": year,
         "material_type": material_type,
         "material_type_label": dict(MATERIAL_TYPES)[material_type],
-        "file_type": file_type,
         "confidence": confidence,
         "looks_academic": looks_academic,
         "relevance": relevance,

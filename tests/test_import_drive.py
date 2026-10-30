@@ -58,11 +58,11 @@ def test_is_study_file_skips_source_files(name, path, expected):
 @pytest.mark.parametrize(
     ("parts", "expected"),
     [
-        (["מבחן", "week.pdf"], ("exams", "exam")),
-        (["תרגול", "week.pdf"], ("quizzes", "exercise")),
-        (["מצגת", "week.pdf"], ("presentations", "presentation")),
-        (["week1.mov"], ("recordings", "recording")),
-        (["week1.pdf"], ("summaries", "summary")),
+            (["מבחן", "week.pdf"], "exams"),
+            (["תרגול", "week.pdf"], "quizzes"),
+            (["מצגת", "week.pdf"], "presentations"),
+            (["week1.mov"], "recordings"),
+            (["week1.pdf"], "summaries"),
     ],
 )
 def test_infer_type_prefers_keywords_then_extension(parts, expected):
@@ -159,7 +159,6 @@ def test_import_materials_inserts_a_mapped_study_file(app_context):
     assert row.course.name == COURSE_MAP[TOP]
     assert row.academic_year == 2024
     assert row.material_type == "exams"
-    assert row.file_type == "exam"
     assert row.icon_type == "pdf"
     assert row.status == STATUS_APPROVED
     assert row.file_path == "https://drive.google.com/file/d/file-1/preview"
@@ -238,7 +237,6 @@ def test_remove_old_drive_rows_keeps_local_files(app_context):
         course_id=course.id,
         academic_year=2024,
         material_type="summaries",
-        file_type="summary",
         icon_type="pdf",
         uploaded_at=date(2024, 1, 1),
         status=STATUS_APPROVED,
@@ -249,7 +247,6 @@ def test_remove_old_drive_rows_keeps_local_files(app_context):
         course_id=course.id,
         academic_year=2024,
         material_type="summaries",
-        file_type="summary",
         icon_type="pdf",
         uploaded_at=date(2024, 1, 1),
         status=STATUS_APPROVED,
@@ -261,7 +258,6 @@ def test_remove_old_drive_rows_keeps_local_files(app_context):
         course_id=course.id,
         academic_year=2024,
         material_type="summaries",
-        file_type="summary",
         icon_type="pdf",
         uploaded_at=date(2024, 1, 1),
         status=STATUS_APPROVED,

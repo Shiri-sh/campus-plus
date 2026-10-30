@@ -183,6 +183,22 @@ def test_upgrades_non_unicode_column_on_mssql(table, column, type_name, expected
     assert statements == [expected]
 
 
+@pytest.mark.parametrize(
+    ("is_mssql", "expected"),
+    [
+        (False, "ALTER TABLE material DROP COLUMN file_type"),
+        (True, "ALTER TABLE [material] DROP COLUMN file_type"),
+    ],
+)
+def test_drops_legacy_file_type_column(is_mssql, expected):
+    columns = complete_columns()
+    columns["material"]["file_type"] = "VARCHAR"
+
+    statements = migration_statements(is_mssql, columns)
+
+    assert statements == [expected]
+
+
 @pytest.mark.parametrize("is_mssql", [False, True])
 def test_complete_schema_needs_no_statements(is_mssql):
     statements = migration_statements(is_mssql, complete_columns())
