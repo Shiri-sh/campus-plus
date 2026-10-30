@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Campus+ | הדיווחים שלי{% endblock %}
+{% block body %}
+{% include "partials/student_nav.html" %}
+
+<main class="page">
+  <h1 class="section-title">הדיווחים שלי</h1>
+  {% if reports %}
+    <ul class="student-reports">
+      {% for report in reports %}
+        <li class="file-card">
+          <h2><bdi>{{ report.material.file_name if report.material else "—" }}</bdi></h2>
+          <p class="student-reports__meta">
+            <span class="badge {% if report.status == 'answered' %}badge-answered{% else %}badge-open{% endif %}">
+              {{ report.status_label }}
+            </span>
+            · {{ report.created_at.strftime("%d/%m/%Y") }}
+          </p>
+          <p><bdi>{{ report.message }}</bdi></p>
+          {% if report.admin_reply %}
+            <p class="student-reports__reply"><strong>תשובת מנהל/ת:</strong> <bdi>{{ report.admin_reply }}</bdi></p>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">עדיין לא נשלחו דיווחים.</p>
+  {% endif %}
+</main>
+{% endblock %}

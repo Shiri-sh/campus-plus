@@ -60,6 +60,11 @@ Drive seed data is **not** live integration: `scripts/list_drive.py` → `instan
 3. Results merge by material id; filters apply to both legs.
 4. No writes; no events.
 
+### Student report inbox (read path)
+
+1. Route in `app.py` calls `catalog.student_reports` for the logged-in student.
+2. Template shows status and `admin_reply` when present. No writes.
+
 ### Student upload (write path)
 
 1. Route validates file, may call `classify.classify_source` for live preview (rule-based, no LLM).

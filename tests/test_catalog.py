@@ -19,6 +19,7 @@ from catalog import (
     relevance_score,
     search_admin_materials,
     semantic_score,
+    student_reports,
     suggestion_items,
 )
 from extensions import db
@@ -540,6 +541,48 @@ def test_admin_reports_returns_newest_first(app_context):
         datetime(2024, 6, 1),
         datetime(2024, 1, 1),
     ]
+
+
+def test_student_reports_returns_only_that_students_rows(app_context):
+    course = add_course("פיזיקה")
+    material = add_material(course, "notes.pdf")
+    owner = add_user("me@jct.ac.il")
+    other = add_user("other@jct.ac.il")
+    mine = add_report(material, owner, datetime(2024, 6, 1), status="answered")
+    add_report(material, other, datetime(2024, 7, 1))
+
+    reports = student_reports(owner.id)
+
+    assert [item.id for item in reports] == [mine.id]
+    assert reports[0].status == "answered"
+
+
+def test_student_reports_orders_newest_first(app_context):
+    course = add_course("פיזיקה")
+    material = add_material(course, "notes.pdf")
+    owner = add_user("me@jct.ac.il")
+    add_report(material, owner, datetime(2024, 1, 1), status="open")
+    add_report(material, owner, datetime(2024, 6, 1), status="answered")
+
+    reports = student_reports(owner.id)
+
+    assert [item.created_at for item in reports] == [
+        datetime(2024, 6, 1),
+        datetime(2024, 1, 1),
+    ]
+
+
+def test_student_reports_includes_the_admin_reply(app_context):
+    course = add_course("פיזיקה")
+    material = add_material(course, "notes.pdf")
+    owner = add_user("me@jct.ac.il")
+    report = add_report(material, owner, datetime(2024, 6, 1), status="answered")
+    report.admin_reply = "בדקנו את הקובץ"
+    db.session.commit()
+
+    reports = student_reports(owner.id)
+
+    assert reports[0].admin_reply == "בדקנו את הקובץ"
 
 
 def test_open_report_count_ignores_answered_reports(app_context):
