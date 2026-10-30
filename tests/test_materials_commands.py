@@ -545,6 +545,24 @@ def test_update_material_keeps_the_file_name_when_the_form_is_blank(app_context)
     assert updated.lecturer is None
 
 
+@pytest.mark.parametrize(
+    ("summary", "expected"),
+    [
+        (None, False),
+        ("", False),
+        ("   ", False),
+        ("לא נוצר סיכום.", False),
+        ("אין סיכום AI זמין.", False),
+        ("סיכום שנשמר מהעלאה", True),
+    ],
+)
+def test_material_has_ai_summary(app_context, summary, expected):
+    course = add_course()
+    material = add_material(course, file_name="doc.pdf")
+    material.ai_summary = summary
+    assert material.has_ai_summary is expected
+
+
 def test_material_commands_reject_a_missing_row(app_context):
     with pytest.raises(LookupError):
         approve_material(999, None)

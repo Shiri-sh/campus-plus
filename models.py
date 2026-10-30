@@ -37,6 +37,23 @@ ACADEMIC_YEARS = tuple(range(2026, 2017, -1))
 
 MATERIAL_TYPE_LABELS = dict(MATERIAL_TYPES)
 
+EMPTY_AI_SUMMARY_TEXT = "אין סיכום AI זמין."
+_PLACEHOLDER_AI_SUMMARIES = frozenset(
+    {
+        EMPTY_AI_SUMMARY_TEXT,
+        "לא נוצר סיכום.",
+    }
+)
+
+
+def stored_ai_summary_from_value(raw):
+    """Normalize a raw ai_summary column value for display (Material or plain objects)."""
+    text = (raw or "").strip()
+    if not text or text in _PLACEHOLDER_AI_SUMMARIES:
+        return None
+    return text
+
+
 GREGORIAN_TO_HEBREW = {
     2017: 'תשע"ז',
     2018: 'תשע"ח',
@@ -136,6 +153,14 @@ class Material(db.Model):
     @property
     def has_stored_file(self):
         return bool(self.file_path)
+
+    def stored_ai_summary_text(self):
+        """Saved AI summary, or None when empty or a known placeholder."""
+        return stored_ai_summary_from_value(self.ai_summary)
+
+    @property
+    def has_ai_summary(self):
+        return self.stored_ai_summary_text() is not None
 
     @property
     def recommendation_label(self):

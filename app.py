@@ -44,6 +44,7 @@ from extensions import csrf, db, login_manager
 from models import (
     ADMIN,
     ACADEMIC_YEARS,
+    EMPTY_AI_SUMMARY_TEXT,
     MATERIAL_TYPES,
     STATUS_APPROVED,
     STUDENT,
@@ -51,6 +52,7 @@ from models import (
     Material,
     User,
     hebrew_year,
+    stored_ai_summary_from_value,
 )
 from admin_views import register_admin_routes
 from schema import ensure_schema
@@ -302,7 +304,7 @@ def approved_material_or_404(material_id):
     return material
 
 
-EMPTY_AI_SUMMARY = "אין סיכום AI זמין."
+EMPTY_AI_SUMMARY = EMPTY_AI_SUMMARY_TEXT
 
 
 def material_payload(material):
@@ -340,7 +342,8 @@ def material_payload(material):
         "lecturer": material.lecturer or "—",
         "academic_year": hebrew_year(material.academic_year),
         "material_type": material.material_type_label,
-        "ai_summary": (material.ai_summary or "").strip() or EMPTY_AI_SUMMARY,
+        "ai_summary": stored_ai_summary_from_value(material.ai_summary) or EMPTY_AI_SUMMARY,
+        "has_stored_ai_summary": stored_ai_summary_from_value(material.ai_summary) is not None,
         "confidence": material.confidence,
         "relevance": relevance_label(material.confidence, material.ai_recommendation),
         "preview_kind": preview_kind,
