@@ -8,3 +8,4 @@ __pycache__/
 instance/
 *.db
 .env
+.cursor/*.log
