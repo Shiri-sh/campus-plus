@@ -40,14 +40,12 @@ def viewed_material(
     file_name="notes.pdf",
     course_name="פיזיקה",
     year=2024,
-    file_type="summary",
     material_type="summaries",
 ):
     return SimpleNamespace(
         file_name=file_name,
         course=SimpleNamespace(name=course_name),
         academic_year=year,
-        file_type=file_type,
         material_type=material_type,
     )
 
@@ -63,7 +61,6 @@ def add_material(course, file_name, **overrides):
     values = {
         "academic_year": 2024,
         "material_type": "summaries",
-        "file_type": "summary",
         "uploaded_at": date(2024, 1, 1),
         "status": STATUS_APPROVED,
         "file_path": "stored.pdf",
@@ -121,14 +118,14 @@ def course_file_counts(options):
         ("   ", ("", [], None, None)),
         (
             "  2024 מבחן אלגברה  ",
-            ("2024 מבחן אלגברה", ["אלגברה"], 2024, "exam"),
+            ("2024 מבחן אלגברה", ["אלגברה"], 2024, "exams"),
         ),
         ("2020 2024", ("2020 2024", [], 2024, None)),
-        ("Slides", ("Slides", [], None, "presentation")),
-        ("EXAM", ("EXAM", [], None, "exam")),
+        ("Slides", ("Slides", [], None, "presentations")),
+        ("EXAM", ("EXAM", [], None, "exams")),
     ],
 )
-def test_parse_search_query_pulls_out_year_and_file_type(query, expected):
+def test_parse_search_query_pulls_out_year_and_material_type(query, expected):
     parsed = parse_search_query(query)
 
     assert parsed == expected
@@ -157,11 +154,11 @@ def test_approved_materials_hides_pending_and_orders_newest_first(app_context):
     add_material(course, "new.pdf", uploaded_at=date(2024, 6, 1))
     add_material(course, "hidden.pdf", status=STATUS_PENDING)
 
-    materials, year, file_type = approved_materials()
+    materials, year, material_type = approved_materials()
 
     assert [item.file_name for item in materials] == ["new.pdf", "old.pdf"]
     assert year is None
-    assert file_type is None
+    assert material_type is None
 
 
 def test_paginate_sequence_returns_slices_and_page_bounds():
@@ -199,7 +196,7 @@ def test_approved_materials_filters_year_zero_as_a_real_year(app_context):
     add_material(course, "unknown.pdf", academic_year=0)
     add_material(course, "known.pdf", academic_year=2024)
 
-    materials, year, _file_type = approved_materials(year=0)
+    materials, year, _material_type = approved_materials(year=0)
 
     assert year == 0
     assert [item.file_name for item in materials] == ["unknown.pdf"]
@@ -210,20 +207,20 @@ def test_approved_materials_uses_an_explicit_year_over_the_query(app_context):
     add_material(course, "old.pdf", academic_year=2020)
     add_material(course, "new.pdf", academic_year=2024)
 
-    materials, year, _file_type = approved_materials(year=2020, query="2024")
+    materials, year, _material_type = approved_materials(year=2020, query="2024")
 
     assert year == 2020
     assert [item.file_name for item in materials] == ["old.pdf"]
 
 
-def test_approved_materials_filters_by_a_hebrew_file_type(app_context):
+def test_approved_materials_filters_by_a_hebrew_material_type(app_context):
     course = add_course("פיזיקה")
-    add_material(course, "exam.pdf", file_type="exam", material_type="exams")
-    add_material(course, "notes.pdf", file_type="summary", material_type="summaries")
+    add_material(course, "exam.pdf", material_type="exams")
+    add_material(course, "notes.pdf", material_type="summaries")
 
-    materials, _year, file_type = approved_materials(query="מבחנים")
+    materials, _year, material_type = approved_materials(query="מבחנים")
 
-    assert file_type == "exam"
+    assert material_type == "exams"
     assert [item.file_name for item in materials] == ["exam.pdf"]
 
 
@@ -233,9 +230,9 @@ def test_approved_materials_drops_files_with_no_token_hits(app_context, monkeypa
     add_material(course, "other.pdf")
     monkeypatch.setattr("catalog._run_semantic_hits", lambda query: [])
 
-    materials, _year, file_type = approved_materials(query="newton")
+    materials, _year, material_type = approved_materials(query="newton")
 
-    assert file_type is None
+    assert material_type is None
     assert [item.file_name for item in materials] == ["newton.pdf"]
     assert materials[0].relevance == 100
 
@@ -264,7 +261,7 @@ def test_approved_materials_merges_keyword_and_chroma_hits(app_context, monkeypa
         lambda query: [{"material_id": semantic_id, "distance": 0.0}],
     )
 
-    materials, _year, _file_type = approved_materials(query="newton")
+    materials, _year, _material_type = approved_materials(query="newton")
 
     assert [item.file_name for item in materials] == ["newton.pdf", "mechanics.pdf"]
     assert materials[1].relevance == 100
@@ -281,7 +278,7 @@ def test_approved_materials_discards_chroma_hits_outside_filters(app_context, mo
         lambda query: [{"material_id": other_id, "distance": 0.0}],
     )
 
-    materials, _year, _file_type = approved_materials(course_id=physics.id, query="newton")
+    materials, _year, _material_type = approved_materials(course_id=physics.id, query="newton")
 
     assert [item.file_name for item in materials] == ["newton.pdf"]
 
@@ -295,7 +292,7 @@ def test_approved_materials_keeps_keyword_results_when_chroma_fails(app_context,
 
     monkeypatch.setattr("catalog._run_semantic_hits", boom)
 
-    materials, _year, _file_type = approved_materials(query="newton")
+    materials, _year, _material_type = approved_materials(query="newton")
 
     assert [item.file_name for item in materials] == ["newton.pdf"]
 
@@ -424,21 +421,18 @@ def test_search_admin_materials_applies_course_year_and_type_together(app_contex
         "match.pdf",
         academic_year=2023,
         material_type="exams",
-        file_type="exam",
     )
     add_material(
         physics,
         "other-year.pdf",
         academic_year=2024,
         material_type="exams",
-        file_type="exam",
     )
     add_material(
         algebra,
         "other-course.pdf",
         academic_year=2023,
         material_type="exams",
-        file_type="exam",
     )
 
     materials, _truncated = search_admin_materials(
@@ -452,7 +446,7 @@ def test_search_admin_materials_applies_course_year_and_type_together(app_contex
 
 def test_search_admin_materials_ignores_an_unknown_material_type(app_context):
     course = add_course("פיזיקה")
-    add_material(course, "exam.pdf", material_type="exams", file_type="exam")
+    add_material(course, "exam.pdf", material_type="exams")
     add_material(course, "notes.pdf")
 
     materials, _truncated = search_admin_materials(material_type="nope")

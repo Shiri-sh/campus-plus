@@ -20,7 +20,7 @@
           />
           <button class="btn btn-primary" type="submit">חיפוש</button>
         </div>
-        {% for name in ["course", "year", "type", "file_type"] %}
+        {% for name in ["course", "year", "type"] %}
           {% set value = request.args.get(name) %}
           {% if value %}
             <input type="hidden" name="{{ name }}" value="{{ value }}" />

@@ -5,7 +5,6 @@ from pathlib import Path
 from flask import current_app
 
 from agent.embeddings import material_document, upsert_material
-from classify import MATERIAL_TO_FILE_TYPE
 from events import (
     MATERIAL_APPROVED,
     MATERIAL_DELETED,
@@ -107,7 +106,6 @@ def confirm_pending_upload(
         course_id=course.id,
         academic_year=academic_year,
         material_type=material_type,
-        file_type=MATERIAL_TO_FILE_TYPE[material_type],
         icon_type=pending["icon_type"],
         uploaded_at=date.today(),
         status=STATUS_PENDING,
@@ -225,7 +223,6 @@ def update_material(
     material.course_id = course_id
     material.academic_year = academic_year
     material.material_type = material_type
-    material.file_type = MATERIAL_TO_FILE_TYPE[material_type]
     material.lecturer = (lecturer or "").strip() or None
     db.session.commit()
     _record_material_event(MATERIAL_UPDATED, material, actor_id)

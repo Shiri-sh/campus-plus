@@ -30,13 +30,13 @@ def test_tokenize_keeps_hebrew_pairs_and_longer_latin(text, expected):
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
-        ("מבחן סופי", ("exams", "exam", 86)),
-        ("exam slides", ("exams", "exam", 86)),
-        ("quiz 3", ("quizzes", "exercise", 86)),
-        ("סיכום", ("summaries", "summary", 86)),
-        ("hw", ("summaries", "summary", 48)),
-        ("", ("summaries", "summary", 48)),
-        (None, ("summaries", "summary", 48)),
+        ("מבחן סופי", ("exams", 86)),
+        ("exam slides", ("exams", 86)),
+        ("quiz 3", ("quizzes", 86)),
+        ("סיכום", ("summaries", 86)),
+        ("hw", ("summaries", 48)),
+        ("", ("summaries", 48)),
+        (None, ("summaries", 48)),
     ],
 )
 def test_predict_material_type_uses_the_first_matching_rule(text, expected):
@@ -107,7 +107,6 @@ def test_classify_source_combines_course_year_and_type(app_context, monkeypatch)
         "academic_year": 2024,
         "material_type": "exams",
         "material_type_label": "מבחנים",
-        "file_type": "exam",
         "confidence": 90,
         "looks_academic": True,
         "relevance": "נראה חומר לימודי שמתאים לקטלוג.",

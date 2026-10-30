@@ -132,20 +132,20 @@ def is_study_file(item):
     if suffix in STUDY_EXTENSIONS:
         return True
     blob = " ".join(item["path"]).lower()
-    return any(keyword in blob for keywords, _, _ in TYPE_KEYWORDS for keyword in keywords)
+    return any(keyword in blob for keywords, _ in TYPE_KEYWORDS for keyword in keywords)
 
 
 def infer_type(parts):
     blob = " ".join(parts).lower()
-    for keywords, material_type, file_type in TYPE_KEYWORDS:
+    for keywords, material_type in TYPE_KEYWORDS:
         if any(keyword.lower() in blob for keyword in keywords):
-            return material_type, file_type
+            return material_type
     name = parts[-1].lower()
     if name.endswith((".ppt", ".pptx")):
-        return "presentations", "presentation"
+        return "presentations"
     if name.endswith((".mp4", ".mov", ".mkv")):
-        return "recordings", "recording"
-    return "summaries", "summary"
+        return "recordings"
+    return "summaries"
 
 
 def infer_year(parts):
@@ -248,7 +248,7 @@ def import_materials(files, limit):
             continue
 
         course_id = course_cache[COURSE_MAP[top]]
-        material_type, file_type = infer_type(item["path"])
+        material_type = infer_type(item["path"])
         year = infer_year(item["path"])
         # Year 0 means the folder had no year. uploaded_at is the import day.
         material = Material(
@@ -256,7 +256,6 @@ def import_materials(files, limit):
             course_id=course_id,
             academic_year=year,
             material_type=material_type,
-            file_type=file_type,
             icon_type=infer_icon(item["name"]),
             uploaded_at=date(year, 1, 1) if year else date.today(),
             status=STATUS_APPROVED,

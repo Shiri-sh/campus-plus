@@ -8,7 +8,6 @@ from agent.embeddings import query_similar
 from extensions import db
 from models import (
     ACADEMIC_YEARS,
-    FILE_TYPES,
     MATERIAL_TYPES,
     STATUS_APPROVED,
     STATUS_PENDING,
@@ -24,36 +23,40 @@ ADMIN_MATERIAL_PAGE_SIZE = 80
 STUDENT_MATERIAL_PAGE_SIZE = 50
 ADMIN_STATUS_FILTERS = (STATUS_APPROVED, STATUS_REJECTED)
 
-FILE_TYPE_ALIASES = {
-    "exam": "exam",
-    "exams": "exam",
-    "מבחן": "exam",
-    "מבחנים": "exam",
-    "מועד": "exam",
-    "summary": "summary",
-    "summaries": "summary",
-    "סיכום": "summary",
-    "סיכומים": "summary",
-    "presentation": "presentation",
-    "presentations": "presentation",
-    "slides": "presentation",
-    "מצגת": "presentation",
-    "מצגות": "presentation",
-    "exercise": "exercise",
-    "exercises": "exercise",
-    "quiz": "exercise",
-    "quizzes": "exercise",
-    "תרגיל": "exercise",
-    "תרגילים": "exercise",
-    "תרגול": "exercise",
-    "תרגולים": "exercise",
+MATERIAL_TYPE_ALIASES = {
+    "exam": "exams",
+    "exams": "exams",
+    "מבחן": "exams",
+    "מבחנים": "exams",
+    "מועד": "exams",
+    "summary": "summaries",
+    "summaries": "summaries",
+    "סיכום": "summaries",
+    "סיכומים": "summaries",
+    "presentation": "presentations",
+    "presentations": "presentations",
+    "slides": "presentations",
+    "מצגת": "presentations",
+    "מצגות": "presentations",
+    "exercise": "quizzes",
+    "exercises": "quizzes",
+    "quiz": "quizzes",
+    "quizzes": "quizzes",
+    "תרגיל": "quizzes",
+    "תרגילים": "quizzes",
+    "תרגול": "quizzes",
+    "תרגולים": "quizzes",
+    "recording": "recordings",
+    "recordings": "recordings",
+    "הקלטה": "recordings",
+    "הקלטות": "recordings",
 }
 
 
 def parse_search_query(query):
     text = (query or "").strip()
     year = None
-    file_type = None
+    material_type = None
     tokens = []
 
     for token in re.findall(r"[A-Za-z0-9'\u0590-\u05FF]+", text.lower()):
@@ -61,12 +64,12 @@ def parse_search_query(query):
         if year_match:
             year = int(token)
             continue
-        if token in FILE_TYPE_ALIASES:
-            file_type = FILE_TYPE_ALIASES[token]
+        if token in MATERIAL_TYPE_ALIASES:
+            material_type = MATERIAL_TYPE_ALIASES[token]
             continue
         tokens.append(token)
 
-    return text, tokens, year, file_type
+    return text, tokens, year, material_type
 
 
 def semantic_score(distance):
@@ -124,8 +127,6 @@ def _merge_hybrid(keyword_materials, chroma_hits, filters):
             extra = extra.filter_by(academic_year=filters["year"])
         if filters.get("material_type"):
             extra = extra.filter_by(material_type=filters["material_type"])
-        if filters.get("file_type"):
-            extra = extra.filter_by(file_type=filters["file_type"])
         for material in extra.all():
             by_id[material.id] = material
             keyword_scores.setdefault(material.id, 0)
@@ -162,7 +163,6 @@ def relevance_score(material, tokens):
             material.file_name,
             material.course.name,
             str(material.academic_year),
-            material.file_type,
             material.material_type,
         ]
     ).lower()
@@ -170,20 +170,18 @@ def relevance_score(material, tokens):
     return int((hits / len(tokens)) * 100)
 
 
-def approved_materials(course_id=None, year=None, material_type=None, file_type=None, query=""):
-    text, tokens, query_year, query_file_type = parse_search_query(query)
+def approved_materials(course_id=None, year=None, material_type=None, query=""):
+    text, tokens, query_year, query_material_type = parse_search_query(query)
     selected_year = query_year if year is None else int(year)
-    selected_file_type = file_type or query_file_type
+    selected_material_type = material_type or query_material_type
 
     records = Material.query.filter_by(status=STATUS_APPROVED)
     if course_id:
         records = records.filter_by(course_id=int(course_id))
     if selected_year is not None:
         records = records.filter_by(academic_year=selected_year)
-    if material_type:
-        records = records.filter_by(material_type=material_type)
-    if selected_file_type:
-        records = records.filter_by(file_type=selected_file_type)
+    if selected_material_type:
+        records = records.filter_by(material_type=selected_material_type)
 
     executor = None
     chroma_future = None
@@ -201,7 +199,7 @@ def approved_materials(course_id=None, year=None, material_type=None, file_type=
     if not text:
         for material in keyword_materials:
             material.relevance = None
-        return keyword_materials, selected_year, selected_file_type
+        return keyword_materials, selected_year, selected_material_type
 
     materials = _merge_hybrid(
         keyword_materials,
@@ -209,11 +207,10 @@ def approved_materials(course_id=None, year=None, material_type=None, file_type=
         {
             "course_id": course_id,
             "year": selected_year,
-            "material_type": material_type,
-            "file_type": selected_file_type,
+            "material_type": selected_material_type,
         },
     )
-    return materials, selected_year, selected_file_type
+    return materials, selected_year, selected_material_type
 
 
 def paginate_sequence(items, page=1, page_size=STUDENT_MATERIAL_PAGE_SIZE):
@@ -415,6 +412,5 @@ def explorer_options():
         "courses": courses,
         "years": tuple(sorted(set(years) | set(ACADEMIC_YEARS), reverse=True)),
         "material_types": MATERIAL_TYPES,
-        "file_types": FILE_TYPES,
         "courses_with_files": [course for course in courses if course.file_count],
     }

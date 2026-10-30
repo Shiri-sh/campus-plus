@@ -91,6 +91,13 @@ def _add_column_statements(is_mssql, columns):
     return statements
 
 
+def _drop_column_statements(is_mssql, columns):
+    material = _quote("material", is_mssql)
+    if "file_type" in columns.get("material", {}):
+        return [f"ALTER TABLE {material} DROP COLUMN file_type"]
+    return []
+
+
 def _unicode_upgrade_statements(is_mssql, columns, unique_constraints=None):
     """Generate ALTER COLUMN statements for VARCHAR→NVARCHAR upgrades.
 
@@ -150,8 +157,9 @@ def migration_statements(
 ):
     additions = _add_column_statements(is_mssql, columns)
     upgrades = _unicode_upgrade_statements(is_mssql, columns, unique_constraints)
+    column_drops = _drop_column_statements(is_mssql, columns)
     drops = _drop_event_actor_fk_statements(is_mssql, event_foreign_keys)
-    return additions + upgrades + drops
+    return additions + upgrades + column_drops + drops
 
 
 def _event_foreign_keys():

@@ -56,10 +56,10 @@ SKIP_TOP_FOLDERS = {
 }
 
 TYPE_KEYWORDS = (
-    (("מבחן", "מבחנים", "exam", "exams", "moed", "מועד", "final", "midterm"), "exams", "exam"),
-    (("תרגיל", "תרגילים", "quiz", "exercise", "homework", "assignment", "hw"), "quizzes", "exercise"),
-    (("סיכום", "סיכומים", "summary", "notes", "lecture notes"), "summaries", "summary"),
-    (("מצגת", "מצגות", "שקף", "שקפים", "slide", "presentation", "ppt"), "presentations", "presentation"),
-    (("הרצאה", "הקלטה", "recording", "video", "zoom", "mp4"), "recordings", "recording"),
-    (("תרגול", "תרגולים"), "quizzes", "exercise"),
+    (("מבחן", "מבחנים", "exam", "exams", "moed", "מועד", "final", "midterm"), "exams"),
+    (("תרגיל", "תרגילים", "quiz", "exercise", "homework", "assignment", "hw"), "quizzes"),
+    (("סיכום", "סיכומים", "summary", "notes", "lecture notes"), "summaries"),
+    (("מצגת", "מצגות", "שקף", "שקפים", "slide", "presentation", "ppt"), "presentations"),
+    (("הרצאה", "הקלטה", "recording", "video", "zoom", "mp4"), "recordings"),
+    (("תרגול", "תרגולים"), "quizzes"),
 )

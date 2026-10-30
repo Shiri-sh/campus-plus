@@ -71,7 +71,10 @@ def test_sqlite_create_all_creates_material_file_name():
 
     db.metadata.create_all(engine)
 
-    assert "file_name" in column_names(engine, "material")
+    names = column_names(engine, "material")
+
+    assert "file_name" in names
+    assert "file_type" not in names
 
 
 def test_sqlite_create_all_creates_event_columns():

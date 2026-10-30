@@ -69,7 +69,6 @@ def test_delete_user_detaches_materials_removes_reports_and_records_the_event(ap
         course_id=course.id,
         academic_year=2024,
         material_type="summaries",
-        file_type="summary",
         icon_type="pdf",
         uploaded_at=date(2024, 1, 1),
         status=STATUS_PENDING,

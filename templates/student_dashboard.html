@@ -81,12 +81,12 @@
           </p>
         {% endif %}
       </div>
-      <div class="filters filters--results" aria-label="סינון לפי סוג קובץ">
-        {% for value, label in file_types %}
+      <div class="filters filters--results" aria-label="סינון לפי סוג חומר">
+        {% for value, label in material_types %}
           <a
-            class="chip {% if selected_file_type == value %}is-active{% endif %}"
-            {% if selected_file_type == value %}aria-current="true"{% endif %}
-            href="{% if selected_file_type == value %}{{ student_url(file_type=None, page=None) }}{% else %}{{ student_url(file_type=value, page=None) }}{% endif %}#results"
+            class="chip {% if selected_type == value %}is-active{% endif %}"
+            {% if selected_type == value %}aria-current="true"{% endif %}
+            href="{% if selected_type == value %}{{ student_url(type=None, page=None) }}{% else %}{{ student_url(type=value, page=None) }}{% endif %}#results"
           >{{ label }}</a>
         {% endfor %}
       </div>
@@ -117,7 +117,7 @@
                 <tr data-material-id="{{ material.id }}">
                   <td class="materials-table__name">
                     <span class="materials-table__filename"><bdi>{{ material.file_name }}</bdi></span>
-                    <span class="materials-table__meta">{{ material.file_type_label }} · {{ material.uploaded_at.strftime("%d/%m/%Y") }}</span>
+                    <span class="materials-table__meta">{{ material.material_type_label }} · {{ material.uploaded_at.strftime("%d/%m/%Y") }}</span>
                   </td>
                   <td class="materials-table__course">{{ material.course.name }}</td>
                   <td>{{ hebrew_year(material.academic_year) }}</td>
