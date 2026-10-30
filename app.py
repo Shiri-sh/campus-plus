@@ -397,7 +397,12 @@ def report_material(material_id):
         flash("יש לכתוב הודעה למנהל/ת.", "error")
         return redirect(url_for("student_dashboard"))
 
-    create_report(material.id, current_user.id, message)
+    create_report(
+        material.id,
+        current_user.id,
+        message,
+        admin_reports_url=url_for("admin", tab="reports", _external=True),
+    )
     flash("הדיווח נשלח למנהל/ת.", "success")
     return redirect(url_for("student_dashboard"))
 
