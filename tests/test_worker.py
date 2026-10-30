@@ -1,10 +1,13 @@
 from datetime import date
 
 from agent.worker import (
+    analyze_extracted_text,
     combined_confidence,
     evaluate_material,
     extract_text,
+    generate_summary,
     pending_unevaluated,
+    relevance_label,
     tavily_score,
 )
 from events import AI_EVALUATION_COMPLETED
@@ -34,6 +37,36 @@ def add_material(course, file_name, **overrides):
     db.session.add(material)
     db.session.commit()
     return material
+
+
+def test_relevance_label_flags_low_confidence_as_not_academic():
+    assert "לא רלוונטי" in relevance_label(21, "reject")
+    assert "רלוונטי" in relevance_label(80, "approve")
+
+
+def test_generate_summary_tries_a_fallback_model(monkeypatch):
+    class _Models:
+        def __init__(self):
+            self.calls = []
+
+        def generate_content(self, model, contents):
+            self.calls.append(model)
+            if model == "gemini-3.5-flash":
+                raise RuntimeError("503")
+            return type("R", (), {"text": "סיכום מהמודל החלופי"})()
+
+    class _Client:
+        def __init__(self, api_key):
+            self.models = _Models()
+            _Client.last = self
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr("agent.worker.Client", _Client)
+
+    summary = generate_summary("חוק ניוטון", "notes.pdf")
+
+    assert summary == "סיכום מהמודל החלופי"
+    assert _Client.last.models.calls[0] == "gemini-3.5-flash"
 
 
 def test_pending_unevaluated_selects_pending_without_a_summary(app_context):
@@ -71,6 +104,23 @@ def test_combined_confidence_averages_the_three_signals():
     score = combined_confidence(0, {"ok": True, "mode": "tavily", "results": [{"t": "1"}]}, 70)
 
     assert score == 83
+
+
+def test_analyze_extracted_text_returns_readonly_ai_fields(monkeypatch):
+    monkeypatch.setattr("agent.worker.query_similar", lambda query, top_k=5: [])
+    monkeypatch.setattr(
+        "agent.worker.tavily_search",
+        lambda query: {"ok": True, "mode": "stub", "results": []},
+    )
+    monkeypatch.setattr("agent.worker.classify_source", lambda text: {"confidence": 70})
+    monkeypatch.setattr("agent.worker.generate_summary", lambda text, fallback: "סיכום קדם-שליחה")
+
+    analysis = analyze_extracted_text("חוק ניוטון", "notes.pdf")
+
+    assert analysis["ai_summary"] == "סיכום קדם-שליחה"
+    assert analysis["ai_confidence"] == 35
+    assert analysis["ai_recommendation"] == "reject"
+    assert "לא רלוונטי" in analysis["relevance"]
 
 
 def test_evaluate_material_embeds_extracted_text(app_context, monkeypatch, tmp_path):

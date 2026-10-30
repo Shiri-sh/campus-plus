@@ -6,6 +6,7 @@
 <main class="page">
   <h1 class="section-title">העלאת חומר חדש</h1>
 
+  {% if not uploaded %}
   <section class="dropzone" data-dropzone>
     <strong>גרור/י קבצים לכאן</strong>
     <p>קבצי PDF, מצגות, מסמכים או קישור לסרטון.</p>
@@ -30,12 +31,20 @@
       </div>
     </header>
 
+    <aside class="ai-readonly" data-ai-readonly aria-live="polite">
+      <p><strong>רלוונטיות:</strong> <span data-classify-relevance></span></p>
+      <p><strong>ביטחון:</strong> <span data-classify-confidence></span></p>
+      <p><strong>סיכום:</strong> <span data-classify-summary dir="auto"></span></p>
+      <p class="field-hint">שדות אלה נוצרים אוטומטית ולא ניתנים לשינוי. אפשר לערוך רק קורס, שנה וסוג חומר.</p>
+    </aside>
+
     <form class="form-stack" action="{{ url_for('confirm_upload') }}" method="post" data-confirm-form>
       {% include "partials/csrf.html" %}
       <div class="prediction-grid">
         <div class="field">
           <label for="predicted-course">קורס</label>
           <select id="predicted-course" name="course_id" required>
+            <option value="">לא זוהה — בחרי קורס ידנית</option>
             {% for course in courses %}
               <option value="{{ course.id }}">{{ course.name }}</option>
             {% endfor %}
@@ -63,11 +72,26 @@
       </div>
     </form>
   </section>
+  {% endif %}
 
   {% if uploaded %}
     <p class="status-banner">
       ממתין לאישור — {{ pending_course }} נשמר וזמין למשתמשים רק לאחר אישור מנהל/ת.
     </p>
+    {% if evaluation %}
+      <section class="ai-preview">
+        <h2 class="section-title">ניתוח AI אחרי ההעלאה</h2>
+        <p><strong>קורס:</strong> {{ evaluation.course.name }}</p>
+        <p><strong>שנה:</strong> {{ hebrew_year(evaluation.academic_year) }}</p>
+        <p><strong>סוג חומר:</strong> {{ evaluation.material_type_label }}</p>
+        <p><strong>רלוונטיות:</strong> {{ relevance }}</p>
+        {% if evaluation.confidence is not none %}
+          <p><strong>ביטחון:</strong> {{ evaluation.confidence }}%</p>
+        {% endif %}
+        <p><strong>סיכום:</strong> {{ evaluation.ai_summary or "לא נוצר סיכום." }}</p>
+        <p class="field-hint">הרלוונטיות, הביטחון והסיכום נשמרו מהניתוח האוטומטי. המנהל/ת עדיין מאשר/ת ידנית.</p>
+      </section>
+    {% endif %}
   {% endif %}
 </main>
 {% endblock %}

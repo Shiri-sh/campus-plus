@@ -256,6 +256,31 @@ def test_confirm_pending_upload_stores_a_pending_row(app_context, prediction, re
     assert event.actor_id is None
 
 
+def test_confirm_pending_upload_stores_session_ai_analysis(app_context):
+    course = add_course()
+
+    material = confirm_pending_upload(
+        pending_upload(
+            {
+                "confidence": 40,
+                "ai_confidence": 88,
+                "ai_recommendation": "approve",
+                "ai_summary": "סיכום שנשמר מהסיווג",
+            }
+        ),
+        course_id=course.id,
+        academic_year=2024,
+        material_type="exams",
+        uploader_id=None,
+        admin_approvals_url="http://approvals",
+        already_notified=True,
+    )
+
+    assert material.confidence == 88
+    assert material.ai_recommendation == "approve"
+    assert material.ai_summary == "סיכום שנשמר מהסיווג"
+
+
 def test_confirm_pending_upload_stores_a_video_link(app_context):
     course = add_course()
     pending = pending_upload({"confidence": 80})

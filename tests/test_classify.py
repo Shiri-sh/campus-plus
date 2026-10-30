@@ -65,8 +65,10 @@ def test_predict_year_prefers_a_known_academic_year(monkeypatch, text, today, ex
 
 
 def test_predict_course_requires_at_least_one_course(app_context):
-    with pytest.raises(IndexError):
-        predict_course("פיזיקה")
+    course, confidence = predict_course("פיזיקה")
+
+    assert course is None
+    assert confidence == 0
 
 
 def test_predict_course_picks_the_closer_name(app_context):
@@ -84,12 +86,11 @@ def test_predict_course_picks_the_closer_name(app_context):
 def test_predict_course_falls_back_when_nothing_overlaps(app_context):
     db.session.add_all([Course(name="פיזיקה"), Course(name="אלגברה")])
     db.session.commit()
-    algebra_id = Course.query.filter_by(name="אלגברה").one().id
 
     course, confidence = predict_course("hello xyz")
 
-    assert course.id == algebra_id
-    assert confidence == 40
+    assert course is None
+    assert confidence == 0
 
 
 def test_classify_source_combines_course_year_and_type(app_context, monkeypatch):
@@ -108,4 +109,6 @@ def test_classify_source_combines_course_year_and_type(app_context, monkeypatch)
         "material_type_label": "מבחנים",
         "file_type": "exam",
         "confidence": 90,
+        "looks_academic": True,
+        "relevance": "נראה חומר לימודי שמתאים לקטלוג.",
     }

@@ -63,10 +63,12 @@ def predict_course(text):
         score = len(overlap) / max(len(course_tokens), 1)
         ranked.append((score, len(overlap), course))
     ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    if not ranked:
+        return None, 0
     best_score, overlap_count, course = ranked[0]
     if overlap_count:
         return course, min(96, int(58 + best_score * 42))
-    return course, 40
+    return None, 0
 
 
 def classify_source(text):
@@ -74,12 +76,21 @@ def classify_source(text):
     year, year_confidence = predict_year(text)
     material_type, file_type, type_confidence = predict_material_type(text)
     confidence = int((course_confidence + year_confidence + type_confidence) / 3)
+    looks_academic = bool(course) and type_confidence >= 86
+    if looks_academic:
+        relevance = "נראה חומר לימודי שמתאים לקטלוג."
+    elif course:
+        relevance = "יש התאמת קורס, אבל סוג החומר לא ברור."
+    else:
+        relevance = "לא זוהה קורס או סוג חומר — ייתכן שזה לא חומר לימודי."
     return {
-        "course_id": course.id,
-        "course_name": course.name,
+        "course_id": None if course is None else course.id,
+        "course_name": None if course is None else course.name,
         "academic_year": year,
         "material_type": material_type,
         "material_type_label": dict(MATERIAL_TYPES)[material_type],
         "file_type": file_type,
         "confidence": confidence,
+        "looks_academic": looks_academic,
+        "relevance": relevance,
     }

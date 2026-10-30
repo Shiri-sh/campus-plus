@@ -91,6 +91,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  document.querySelectorAll("[data-admin-summary]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const response = await fetch(`/admin/materials/${button.dataset.adminSummary}`);
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json();
+      const modal = document.getElementById("admin-summary-modal");
+      const text = modal?.querySelector("[data-admin-summary-text]");
+      if (text) {
+        text.textContent = data.ai_summary || "לא נוצר סיכום.";
+      }
+      modal?.classList.add("is-open");
+    });
+  });
+
   document.querySelectorAll("[data-admin-preview]").forEach((button) => {
     button.addEventListener("click", async () => {
       const response = await fetch(`/admin/materials/${button.dataset.adminPreview}`);
@@ -227,17 +243,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const fileNameLabel = document.querySelector("[data-upload-name]");
 
   const showPrediction = (data) => {
-    document.getElementById("predicted-course").value = String(data.course_id);
+    const courseSelect = document.getElementById("predicted-course");
+    courseSelect.value = data.course_id ? String(data.course_id) : "";
     document.getElementById("predicted-year").value = String(data.academic_year);
     document.getElementById("predicted-type").value = data.material_type;
+    const relevance = document.querySelector("[data-classify-relevance]");
+    if (relevance) {
+      relevance.textContent = data.relevance || "";
+    }
+    const confidence = document.querySelector("[data-classify-confidence]");
+    if (confidence) {
+      confidence.textContent =
+        data.ai_confidence != null && data.ai_confidence !== ""
+          ? `${data.ai_confidence}%`
+          : "";
+    }
+    const summary = document.querySelector("[data-classify-summary]");
+    if (summary) {
+      summary.textContent = data.ai_summary || "לא נוצר סיכום.";
+    }
     spinner.classList.add("hidden");
-    statusText.textContent = "אשר/י את הסיווג המוצע או ערוך/י אותו ידנית.";
+    statusText.textContent = data.looks_academic
+      ? "אשר/י את הסיווג המוצע או ערוך/י אותו ידנית. רלוונטיות, ביטחון וסיכום לקריאה בלבד."
+      : "הקובץ לא זוהה כחומר לימודי ברור. בחרי קורס ידנית או בטלי.";
   };
 
   const classifyUpload = async (body) => {
     previewBox.classList.remove("hidden");
     spinner.classList.remove("hidden");
-    statusText.textContent = "מסווג את החומר שנבחר...";
+    statusText.textContent = "מנתח את החומר שנבחר, כולל סיכום AI...";
     const response = await fetch("/upload/classify", {
       method: "POST",
       headers: csrfToken ? { "X-CSRFToken": csrfToken } : {},

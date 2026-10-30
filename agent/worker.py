@@ -36,7 +36,8 @@ from models import STATUS_PENDING, Material
 logger = logging.getLogger(__name__)
 
 DEFAULT_POLL_SECONDS = 30
-SUMMARY_MODEL = os.environ.get("GEMINI_SUMMARY_MODEL") or "gemini-2.0-flash"
+SUMMARY_MODEL = os.environ.get("GEMINI_SUMMARY_MODEL") or "gemini-3.5-flash"
+SUMMARY_FALLBACK_MODELS = ("gemini-flash-latest", "gemini-3.8-flash")
 EMBED_QUERY_CHARS = 4000
 
 
@@ -88,6 +89,22 @@ def extract_text(material, upload_folder):
     return ""
 
 
+def _summary_models():
+    models = []
+    for name in (SUMMARY_MODEL, *SUMMARY_FALLBACK_MODELS):
+        if name and name not in models:
+            models.append(name)
+    return models
+
+
+def relevance_label(confidence, recommendation):
+    if recommendation == "reject" or (confidence is not None and confidence < 40):
+        return "נראה לא רלוונטי ללימודים, או דורש בדיקת מנהל."
+    if confidence is not None and confidence < 70:
+        return "לא בטוח שזה מתאים לקטלוג."
+    return "נראה חומר לימודי רלוונטי."
+
+
 def generate_summary(text, fallback):
     body = (text or "").strip() or (fallback or "").strip()
     api_key = (os.environ.get("GEMINI_API_KEY") or "").strip()
@@ -95,19 +112,22 @@ def generate_summary(text, fallback):
         return "לא ניתן היה לחלץ טקסט מהקובץ."
     if not api_key:
         return body[:400]
-    try:
-        client = Client(api_key=api_key)
-        prompt = (
-            "סכם בעברית בפסקה אחת חומר לימודי זה לסטודנט. "
-            "אם הטקסט קצר, נסח מה יש בקובץ לפי השם והתוכן.\n\n"
-            f"{body[:6000]}"
-        )
-        result = client.models.generate_content(model=SUMMARY_MODEL, contents=prompt)
-        summary = (getattr(result, "text", None) or "").strip()
-        return summary or body[:400]
-    except Exception as error:
-        logger.warning("generate_summary failed: %s", error)
-        return body[:400]
+    client = Client(api_key=api_key)
+    prompt = (
+        "סכם בעברית בפסקה אחת חומר לימודי זה לסטודנט. "
+        "אם הטקסט קצר, נסח מה יש בקובץ לפי השם והתוכן. "
+        "אם זה לא חומר לימודי, אמור זאת במפורש.\n\n"
+        f"{body[:6000]}"
+    )
+    for model in _summary_models():
+        try:
+            result = client.models.generate_content(model=model, contents=prompt)
+            summary = (getattr(result, "text", None) or "").strip()
+            if summary:
+                return summary
+        except Exception as error:
+            logger.warning("generate_summary failed (%s): %s", model, error)
+    return body[:400]
 
 
 def tavily_score(payload):
@@ -127,6 +147,28 @@ def combined_confidence(similarity, tavily_payload, keyword):
     return int((sim + tav + key) / 3)
 
 
+def analyze_extracted_text(text, source_label, keyword_fallback=0):
+    identity = source_label or ""
+    content = (text or "").strip()
+    embed_query = content[:EMBED_QUERY_CHARS] or identity
+    hits = query_similar(embed_query, top_k=5)
+    nearest = hits[0]["distance"] if hits else None
+    tavily_payload = tavily_search(content[:400] or identity)
+    try:
+        keyword = classify_source(content or identity).get("confidence")
+    except Exception:
+        keyword = keyword_fallback
+    summary = generate_summary(content, identity)
+    confidence = combined_confidence(nearest, tavily_payload, keyword)
+    recommendation = "approve" if confidence >= 70 else "reject"
+    return {
+        "ai_summary": summary,
+        "ai_confidence": confidence,
+        "ai_recommendation": recommendation,
+        "relevance": relevance_label(confidence, recommendation),
+    }
+
+
 def evaluate_material(material, upload_folder):
     text = extract_text(material, upload_folder)
     identity = " ".join(
@@ -137,28 +179,23 @@ def evaluate_material(material, upload_folder):
         )
         if part
     )
-    embed_query = (text[:EMBED_QUERY_CHARS].strip() or identity or material.file_name)
-    hits = query_similar(embed_query, top_k=5)
-    nearest = hits[0]["distance"] if hits else None
-    tavily_payload = tavily_search(identity or material.file_name)
-    try:
-        keyword = classify_source(text or material.file_name).get("confidence")
-    except Exception:
-        keyword = material.confidence
-    summary = generate_summary(text, material.file_name)
-    confidence = combined_confidence(nearest, tavily_payload, keyword)
-    material.ai_summary = summary
-    material.confidence = confidence
-    material.ai_recommendation = "approve" if confidence >= 70 else "reject"
+    analysis = analyze_extracted_text(
+        text,
+        identity or material.file_name,
+        keyword_fallback=material.confidence,
+    )
+    material.ai_summary = analysis["ai_summary"]
+    material.confidence = analysis["ai_confidence"]
+    material.ai_recommendation = analysis["ai_recommendation"]
     db.session.commit()
     record_event(
         AI_EVALUATION_COMPLETED,
         "Material",
         material.id,
-        payload={
-            "confidence": confidence,
-            "ai_recommendation": material.ai_recommendation,
-        },
+            payload={
+                "confidence": material.confidence,
+                "ai_recommendation": material.ai_recommendation,
+            },
     )
     return material
 

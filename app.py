@@ -30,7 +30,10 @@ from catalog import (
     explorer_options,
     suggestion_items,
 )
+from types import SimpleNamespace
+
 from classify import ICON_BY_EXTENSION, classify_source
+from agent.worker import analyze_extracted_text, extract_text, relevance_label
 from commands.materials import confirm_pending_upload
 from commands.reports import create_report
 from commands.users import register_user
@@ -329,6 +332,8 @@ def material_payload(material):
         "academic_year": hebrew_year(material.academic_year),
         "material_type": material.material_type_label,
         "ai_summary": material.ai_summary or "עדיין לא נוצר.",
+        "confidence": material.confidence,
+        "relevance": relevance_label(material.confidence, material.ai_recommendation),
         "preview_kind": preview_kind,
         "preview_url": preview_url,
         "download_url": download_url,
@@ -424,6 +429,7 @@ def classify_upload():
     uploaded = request.files.get("file")
     video_link = (request.form.get("video_link") or "").strip()
     source_name = ""
+    extracted = ""
 
     if uploaded and uploaded.filename:
         suffix = Path(uploaded.filename).suffix.lower()
@@ -439,6 +445,11 @@ def classify_upload():
             "video_link": "",
         }
         source_name = uploaded.filename
+        extracted = extract_text(
+            SimpleNamespace(id=0, file_path=saved_name, is_link=False),
+            app.config["UPLOAD_FOLDER"],
+        )
+        source_name = f"{source_name}\n{extracted[:12000]}"
     elif is_video_link(video_link):
         session["pending_upload"] = {
             "stored_name": "",
@@ -451,6 +462,17 @@ def classify_upload():
         return jsonify({"error": "יש לבחור קובץ או להזין קישור לסרטון."}), 400
 
     prediction = classify_source(source_name)
+    label = (session.get("pending_upload") or {}).get("original_name") or source_name[:200]
+    try:
+        analysis = analyze_extracted_text(extracted, label)
+    except Exception:
+        analysis = {
+            "ai_summary": "לא נוצר סיכום.",
+            "ai_confidence": prediction.get("confidence"),
+            "ai_recommendation": "approve" if (prediction.get("confidence") or 0) >= 70 else "reject",
+            "relevance": prediction.get("relevance") or "",
+        }
+    prediction = {**prediction, **analysis}
     session["pending_upload"]["prediction"] = prediction
     return jsonify(prediction)
 
@@ -506,6 +528,8 @@ def confirm_upload():
         prediction=None,
         uploaded=True,
         pending_course=material.course.name,
+        evaluation=material,
+        relevance=relevance_label(material.confidence, material.ai_recommendation),
     )
 
 
