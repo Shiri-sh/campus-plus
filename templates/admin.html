@@ -60,7 +60,7 @@
                 </span>
               </td>
               <td>
-                {% include "partials/admin_summary_eye.html" %}
+                {% include "partials/summary_eye.html" %}
               </td>
               <td>
                 <div class="table-actions">
@@ -427,7 +427,7 @@
                   <td>{{ relevance_label(material.confidence, material.ai_recommendation) }}</td>
                   <td>{% if material.confidence is not none %}{{ material.confidence }}%{% else %}—{% endif %}</td>
                   <td>
-                    {% include "partials/admin_summary_eye.html" %}
+                    {% include "partials/summary_eye.html" %}
                   </td>
                   <td>
                     <div class="table-actions">
