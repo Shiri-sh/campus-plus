@@ -8,9 +8,9 @@ An intelligent academic materials platform for JCT students — upload, discover
 
 - **Smart catalog** — browse, search, and preview thousands of academic materials organized by course, year, and type. Imported files with no detectable year keep `academic_year = 0` and show as לא ידוע in the student explorer and admin year menu.
 - **Hybrid search** — `catalog.approved_materials` and `/student/suggest` run SQL keyword matching and Chroma semantic hits together, then merge by material id. Course, year, and type filters apply to both sides. If Chroma or Gemini is unavailable, keyword results still return.
-- **AI content agent** — a background worker evaluates every new upload: extracts text, verifies relevance via Tavily, generates a summary, and recommends approve/reject to admins
-- **Upload with live classification** — students upload files and get instant course/type predictions before submitting
-- **Admin dashboard** — KPI cards, pending approval queue, content reports, and user management in one view
+- **AI content agent** — on upload, Campus+ extracts file text, classifies course/year/type from the catalog, then calls Gemini (summary) and Tavily (relevance). The same analysis can run later in `agent/worker.py` for pending rows that still have no `ai_summary`. Admins still approve or reject.
+- **Upload with live classification** — students see course/year/type (editable) plus read-only relevance, confidence, and summary before the file is sent to an admin
+- **Admin dashboard** — KPI cards, pending approval queue with stored relevance/confidence and a summary eye icon, content reports, and user management
 - **MCP tool integration** — Tavily web search (`python -m mcp_tools.tavily_search.server`) and Gmail notifications (`python -m mcp_tools.gmail_alert.server`) built as MCP Studio tools
 
 ## Architecture
@@ -53,7 +53,7 @@ flowchart TB
 |-------|-----------|
 | Server | Flask 3.1 · Flask-Login · Flask-SQLAlchemy |
 | Database | MSSQL on somee.com (SQLite for local dev) |
-| Vector DB | ChromaDB (local, Gemini `text-embedding-004`) |
+| Vector DB | ChromaDB (local, Gemini `gemini-embedding-001`) |
 | AI | Google Gemini (summaries + embeddings) · Tavily (web verification) |
 | MCP Tools | Tavily search · Gmail alerts (built in MCP Studio) |
 | Frontend | Jinja2 templates · vanilla JS · CSS |

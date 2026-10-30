@@ -672,6 +672,22 @@ a.chip {
   }
 }
 
+.ai-readonly {
+  margin-block-end: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--warning-soft, #f7fafb);
+}
+
+.ai-readonly p {
+  margin: 0 0 8px;
+}
+
+.ai-readonly p:last-child {
+  margin-block-end: 0;
+}
+
 .prediction-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -798,6 +814,26 @@ tr:last-child td {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 32px;
+  block-size: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--primary, #1a6b7a);
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.icon-btn:hover,
+.icon-btn:focus-visible {
+  background: var(--bg, #f7fafb);
 }
 
 /* Admin — user library */

@@ -64,7 +64,10 @@
             <th>שם קובץ</th>
             <th>תאריך העלאה</th>
             <th>קורס משוער</th>
+            <th>רלוונטיות</th>
+            <th>ביטחון</th>
             <th>המלצת AI</th>
+            <th>סיכום</th>
             <th>פעולות</th>
           </tr>
         </thead>
@@ -74,10 +77,26 @@
               <td><bdi>{{ material.file_name }}</bdi></td>
               <td>{{ material.uploaded_at.strftime("%d/%m/%Y") }}</td>
               <td>{{ material.course.name }}</td>
+              <td>{{ relevance_label(material.confidence, material.ai_recommendation) }}</td>
+              <td>{% if material.confidence is not none %}{{ material.confidence }}%{% else %}—{% endif %}</td>
               <td>
                 <span class="rec {% if material.ai_recommendation == 'reject' %}rec-reject{% else %}rec-approve{% endif %}">
                   {{ material.recommendation_label }}
                 </span>
+              </td>
+              <td>
+                <button
+                  class="icon-btn"
+                  type="button"
+                  data-admin-summary="{{ material.id }}"
+                  title="הצגת סיכום שמור"
+                  aria-label="הצגת סיכום AI שנשמר עם הקובץ"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
               </td>
               <td>
                 <div class="table-actions">
@@ -362,6 +381,9 @@
                 <th scope="col">סוג</th>
                 <th scope="col">מרצה</th>
                 <th scope="col">סטטוס</th>
+                <th scope="col">רלוונטיות</th>
+                <th scope="col">ביטחון</th>
+                <th scope="col">סיכום</th>
                 <th scope="col">פעולות</th>
               </tr>
             </thead>
@@ -438,6 +460,22 @@
                       {{ material.status_label }}
                     </span>
                   </td>
+                  <td>{{ relevance_label(material.confidence, material.ai_recommendation) }}</td>
+                  <td>{% if material.confidence is not none %}{{ material.confidence }}%{% else %}—{% endif %}</td>
+                  <td>
+                    <button
+                      class="icon-btn"
+                      type="button"
+                      data-admin-summary="{{ material.id }}"
+                      title="הצגת סיכום שמור"
+                      aria-label="הצגת סיכום AI שנשמר עם הקובץ"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
+                  </td>
                   <td>
                     <div class="table-actions">
                       <button class="btn btn-primary btn-compact" type="submit" form="material-update-{{ material.id }}">שמירת סיווג</button>
@@ -469,6 +507,19 @@
     </div>
     <div class="preview-frame" data-preview-frame>לא קיים קובץ שמור לרשומה זו.</div>
     <a class="btn btn-primary hidden" data-modal-download href="#" target="_blank" rel="noopener noreferrer">הורדה</a>
+  </div>
+</div>
+
+<div class="modal" id="admin-summary-modal">
+  <div class="modal-card narrow">
+    <div class="modal-head">
+      <h2>סיכום AI</h2>
+      <button class="btn btn-ghost" type="button" data-close-modal>סגירה</button>
+    </div>
+    <p class="field-hint">הסיכום נשמר עם הקובץ בעת ההעלאה ואינו נשלח מחדש ל-AI.</p>
+    <div class="ai-summary">
+      <p data-admin-summary-text dir="auto">עדיין לא נוצר.</p>
+    </div>
   </div>
 </div>
 {% endblock %}

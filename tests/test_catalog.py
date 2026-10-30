@@ -195,10 +195,11 @@ def test_approved_materials_filters_by_a_hebrew_file_type(app_context):
     assert [item.file_name for item in materials] == ["exam.pdf"]
 
 
-def test_approved_materials_drops_files_with_no_token_hits(app_context):
+def test_approved_materials_drops_files_with_no_token_hits(app_context, monkeypatch):
     course = add_course("פיזיקה")
     add_material(course, "newton.pdf")
     add_material(course, "other.pdf")
+    monkeypatch.setattr("catalog._run_semantic_hits", lambda query: [])
 
     materials, _year, file_type = approved_materials(query="newton")
 

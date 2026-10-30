@@ -79,7 +79,12 @@ def confirm_pending_upload(
 
     file_path = pending["video_link"] or pending["stored_name"]
     prediction = pending.get("prediction") or {}
-    confidence = prediction.get("confidence")
+    confidence = prediction.get("ai_confidence")
+    if confidence is None:
+        confidence = prediction.get("confidence")
+    recommendation = prediction.get("ai_recommendation")
+    if recommendation not in {"approve", "reject"}:
+        recommendation = "approve" if (confidence or 0) >= 70 else "reject"
     material = Material(
         file_name=pending["original_name"] if not pending["video_link"] else "קישור לוידאו",
         course_id=course.id,
@@ -92,7 +97,8 @@ def confirm_pending_upload(
         file_path=file_path,
         uploader_id=uploader_id,
         confidence=confidence,
-        ai_recommendation="approve" if (confidence or 0) >= 70 else "reject",
+        ai_recommendation=recommendation,
+        ai_summary=prediction.get("ai_summary"),
     )
     db.session.add(material)
     db.session.commit()

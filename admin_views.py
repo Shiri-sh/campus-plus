@@ -3,6 +3,8 @@ from pathlib import Path
 from flask import abort, current_app, flash, jsonify, redirect, render_template, request, send_from_directory, url_for
 from flask_login import current_user
 
+from agent.worker import relevance_label
+
 from catalog import (
     admin_reports,
     admin_users,
@@ -146,6 +148,7 @@ def register_admin_routes(app, role_required, material_payload):
             open_report_count=open_report_count(),
             active_course_count=len(distribution),
             distribution=distribution,
+            relevance_label=relevance_label,
         )
 
     @app.route("/admin/materials/<int:material_id>")

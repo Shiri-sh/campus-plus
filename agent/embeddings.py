@@ -9,7 +9,7 @@ from models import hebrew_year
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "campus_materials"
-EMBEDDING_MODEL = "text-embedding-004"
+EMBEDDING_MODEL = os.environ.get("GEMINI_EMBEDDING_MODEL") or "gemini-embedding-001"
 DEFAULT_CHROMA_DIR = "instance/chroma"
 
 
