@@ -38,6 +38,7 @@ campus-plus/
 ├── tests/                 # pytest suite (`pytest` from repo root)
 ├── docs/
 │   ├── LAYOUT.md          # this file
+│   ├── PRD.md             # Product requirements (course deliverable)
 │   └── ARCHITECTURE.md
 ├── README.md
 ├── AGENTS.md
