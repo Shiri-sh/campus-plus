@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-from commands.notify import send_admin_mail
+from commands.notify import send_admin_mail, send_mail
 from events import REPORT_CREATED, REPORT_REPLIED, record_event
 from extensions import db
 from models import Report
@@ -23,6 +23,30 @@ def notify_admins_of_report(report, admin_reports_url):
         f"לדיווחים:\n{admin_reports_url or ''}\n"
     )
     return send_admin_mail(subject, body, context=f"for report {report.id}")
+
+
+def notify_reporter_of_reply(report, student_reports_url=None):
+    reporter = report.reporter
+    if reporter is None or not (reporter.email or "").strip():
+        logger.info("gmail_alert: no reporter to notify for report %s", report.id)
+        return None
+    material = report.material
+    file_name = material.file_name if material else "—"
+    subject = f"Campus+: תשובה לדיווח — {file_name}"
+    body = (
+        "מנהל/ת השיב/ה לדיווח שלך.\n\n"
+        f"קובץ: {file_name}\n"
+        f"הדיווח שלך: {report.message}\n"
+        f"תשובה: {report.admin_reply}\n"
+    )
+    if student_reports_url:
+        body += f"\nלדיווחים שלך:\n{student_reports_url}\n"
+    return send_mail(
+        reporter.email,
+        subject,
+        body,
+        context=f"for reporter of report {report.id}",
+    )
 
 
 def create_report(material_id, reporter_id, message, admin_reports_url=None):
@@ -66,7 +90,7 @@ def create_report(material_id, reporter_id, message, admin_reports_url=None):
     return report
 
 
-def reply_to_report(report_id, actor_id, reply):
+def reply_to_report(report_id, actor_id, reply, student_reports_url=None):
     report = db.session.get(Report, report_id)
     if report is None:
         raise LookupError(f"report {report_id} not found")
@@ -81,4 +105,8 @@ def reply_to_report(report_id, actor_id, reply):
         actor_id=actor_id,
         payload={"material_id": report.material_id},
     )
+    try:
+        notify_reporter_of_reply(report, student_reports_url)
+    except Exception as error:
+        logger.warning("gmail_alert skipped after report reply: %s", error)
     return report

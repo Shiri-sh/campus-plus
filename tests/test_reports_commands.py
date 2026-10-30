@@ -111,6 +111,70 @@ def test_reply_to_report_marks_it_answered(app_context):
     assert event.entity_id == report.id
 
 
+def test_reply_emails_the_reporter(app_context, monkeypatch):
+    material = add_material()
+    student = add_student()
+    admin = User(email="admin@jct.ac.il", password_hash="hash", role=ADMIN)
+    db.session.add(admin)
+    db.session.commit()
+    report = Report(
+        material_id=material.id,
+        reporter_id=student.id,
+        message="הקובץ לא נפתח",
+        created_at=datetime(2024, 3, 1),
+        status="open",
+    )
+    db.session.add(report)
+    db.session.commit()
+    sent = []
+    monkeypatch.setattr(
+        "commands.notify.call_tool",
+        lambda recipient, subject, body: sent.append((recipient, subject, body)) or {"ok": True},
+    )
+
+    reply_to_report(
+        report.id,
+        admin.id,
+        "בדקנו את הקובץ",
+        student_reports_url="https://example.com/student/reports",
+    )
+
+    assert len(sent) == 1
+    recipient, subject, body = sent[0]
+    assert recipient == "student@jct.ac.il"
+    assert "סיכום.pdf" in subject
+    assert "בדקנו את הקובץ" in body
+    assert "הקובץ לא נפתח" in body
+    assert "https://example.com/student/reports" in body
+
+
+def test_reply_keeps_the_row_when_gmail_fails(app_context, monkeypatch):
+    material = add_material()
+    student = add_student()
+    admin = User(email="admin@jct.ac.il", password_hash="hash", role=ADMIN)
+    db.session.add(admin)
+    db.session.commit()
+    report = Report(
+        material_id=material.id,
+        reporter_id=student.id,
+        message="שאלה",
+        created_at=datetime(2024, 3, 1),
+        status="open",
+    )
+    db.session.add(report)
+    db.session.commit()
+
+    def boom(recipient, subject, body):
+        raise RuntimeError("smtp down")
+
+    monkeypatch.setattr("commands.notify.call_tool", boom)
+
+    answered = reply_to_report(report.id, admin.id, "בדקנו את הקובץ")
+
+    assert answered.status == "answered"
+    assert answered.admin_reply == "בדקנו את הקובץ"
+
+
 def test_reply_to_report_rejects_a_missing_row(app_context):
     with pytest.raises(LookupError):
         reply_to_report(999, None, "תשובה")

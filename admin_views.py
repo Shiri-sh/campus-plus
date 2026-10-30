@@ -253,11 +253,13 @@ def register_admin_routes(app, role_required, material_payload):
         if not reply:
             flash("יש לכתוב תגובה לפני שליחה.", "error")
             return admin_redirect("reports")
-        reply_to_report(report.id, current_user.id, reply)
-        flash(
-            f"התגובה נשמרה עבור {report.reporter.email}. Gmail MCP עדיין לא מחובר — לא נשלח דוא״ל.",
-            "success",
+        reply_to_report(
+            report.id,
+            current_user.id,
+            reply,
+            student_reports_url=url_for("student_report_inbox", _external=True),
         )
+        flash("התגובה נשמרה ונשלחה הודעה לסטודנט/ית.", "success")
         return admin_redirect("reports")
 
     @app.route("/admin/users/create", methods=["POST"])
