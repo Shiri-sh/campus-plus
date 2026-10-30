@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Campus+ | העלאת חומר{% endblock %}
 {% block body %}
-{% include "partials/student_nav.html" %}
+{% if current_user.role == "admin" %}
+  {% include "partials/admin_header.html" %}
+{% else %}
+  {% include "partials/student_nav.html" %}
+{% endif %}
 
 <main class="page">
   <h1 class="section-title">העלאת חומר חדש</h1>
@@ -75,9 +79,15 @@
   {% endif %}
 
   {% if uploaded %}
-    <p class="status-banner">
-      ממתין לאישור — {{ pending_course }} נשמר וזמין למשתמשים רק לאחר אישור מנהל/ת.
-    </p>
+    {% if auto_approved %}
+      <p class="status-banner">
+        החומר אושר — {{ pending_course }} זמין כעת בקטלוג הסטודנטים.
+      </p>
+    {% else %}
+      <p class="status-banner">
+        ממתין לאישור — {{ pending_course }} נשמר וזמין למשתמשים רק לאחר אישור מנהל/ת.
+      </p>
+    {% endif %}
     {% if evaluation %}
       <section class="ai-preview">
         <h2 class="section-title">ניתוח AI אחרי ההעלאה</h2>
@@ -89,7 +99,11 @@
           <p><strong>ביטחון:</strong> {{ evaluation.confidence }}%</p>
         {% endif %}
         <p><strong>סיכום:</strong> {{ evaluation.ai_summary or "לא נוצר סיכום." }}</p>
-        <p class="field-hint">הרלוונטיות, הביטחון והסיכום נשמרו מהניתוח האוטומטי. המנהל/ת עדיין מאשר/ת ידנית.</p>
+        {% if auto_approved %}
+          <p class="field-hint">הרלוונטיות, הביטחון והסיכום נשמרו מהניתוח האוטומטי לפני האישור.</p>
+        {% else %}
+          <p class="field-hint">הרלוונטיות, הביטחון והסיכום נשמרו מהניתוח האוטומטי. המנהל/ת עדיין מאשר/ת ידנית.</p>
+        {% endif %}
       </section>
     {% endif %}
   {% endif %}

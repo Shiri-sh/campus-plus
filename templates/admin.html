@@ -1,32 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Campus+ | ממשק ניהול{% endblock %}
 {% block body %}
-<header class="app-header">
-  <div class="header-inner">
-    <a class="brand" href="{{ url_for('admin') }}">
-      <span class="brand-mark">+</span>
-      <span class="brand-name">Campus<span>+</span></span>
-    </a>
-    <span class="admin-title">ממשק ניהול</span>
-    <div class="profile-chip">
-      <div class="avatar">{{ current_user.initials }}</div>
-      <div class="profile-meta">
-        <strong>{{ current_user.role_label }}</strong>
-        <span>{{ current_user.email }}</span>
-        <a class="logout-link" href="{{ url_for('logout') }}">התנתקות</a>
-      </div>
-    </div>
-  </div>
-</header>
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="flash-bar">
-      {% for category, message in messages %}
-        <p class="alert alert-{{ category }}">{{ message }}</p>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
+{% include "partials/admin_header.html" %}
 
 <main class="page" data-admin-tab="{{ active_tab }}">
   <section class="kpi-row">

@@ -36,7 +36,7 @@ from types import SimpleNamespace
 
 from classify import ICON_BY_EXTENSION, classify_source
 from agent.worker import analyze_extracted_text, extract_text, relevance_label
-from commands.materials import confirm_pending_upload
+from commands.materials import approve_material, confirm_pending_upload
 from commands.reports import create_report
 from commands.users import register_user
 from db_config import resolve_database_url
@@ -442,7 +442,7 @@ def is_video_link(value):
 
 
 @app.route("/upload")
-@role_required(STUDENT)
+@role_required(STUDENT, ADMIN)
 def upload():
     return render_template(
         "upload.html",
@@ -455,7 +455,7 @@ def upload():
 
 
 @app.route("/upload/classify", methods=["POST"])
-@role_required(STUDENT)
+@role_required(STUDENT, ADMIN)
 def classify_upload():
     uploaded = request.files.get("file")
     video_link = (request.form.get("video_link") or "").strip()
@@ -509,7 +509,7 @@ def classify_upload():
 
 
 @app.route("/upload/confirm", methods=["POST"])
-@role_required(STUDENT)
+@role_required(STUDENT, ADMIN)
 def confirm_upload():
     pending = session.get("pending_upload")
     if not pending:
@@ -551,6 +551,14 @@ def confirm_upload():
         notified.append(notify_key)
         session["notified_uploads"] = notified[-20:]
 
+    auto_approved = current_user.role == ADMIN
+    if auto_approved:
+        material = approve_material(
+            material.id,
+            current_user.id,
+            student_url=url_for("student_dashboard", _external=True),
+        )
+
     return render_template(
         "upload.html",
         courses=Course.query.order_by(Course.name).all(),
@@ -558,6 +566,7 @@ def confirm_upload():
         material_types=MATERIAL_TYPES,
         prediction=None,
         uploaded=True,
+        auto_approved=auto_approved,
         pending_course=material.course.name,
         evaluation=material,
         relevance=relevance_label(material.confidence, material.ai_recommendation),
