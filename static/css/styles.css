@@ -290,11 +290,24 @@ button {
   min-height: 76px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+}
+
+.header-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.header-upload {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .header-search {
   flex: 1;
+  width: 100%;
   position: relative;
 }
 
@@ -372,6 +385,47 @@ button {
   margin-top: 12px;
 }
 
+.filters--results {
+  margin-top: 0;
+}
+
+.results-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.results-toolbar .section-title {
+  margin-bottom: 4px;
+}
+
+.results-summary {
+  margin: 0;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.pagination__status {
+  font-size: 0.88rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.btn.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .chip {
   border: 1px solid var(--line);
   background: #fff;
@@ -386,6 +440,19 @@ button {
   background: var(--primary-soft);
   border-color: #b7dce4;
   color: var(--primary-dark);
+}
+
+.filters--results .chip.is-active {
+  background: var(--success-soft);
+  border-color: #9fd4b3;
+  color: var(--success);
+  box-shadow: inset 0 0 0 1px rgba(21, 122, 58, 0.25), 0 0 0 3px rgba(21, 122, 58, 0.12);
+  font-weight: 700;
+}
+
+.filters--results .chip.is-active:focus-visible {
+  outline: 2px solid var(--success);
+  outline-offset: 2px;
 }
 
 .typeahead {
@@ -1152,6 +1219,35 @@ tr:last-child td {
   border-radius: 0 0 var(--radius) var(--radius);
 }
 
+.student-materials-table {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(18, 35, 58, 0.05);
+  overflow: hidden;
+}
+
+.materials-table__filename {
+  display: block;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.materials-table__meta {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.materials-table__course {
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.materials-table {
+  min-width: 960px;
+}
+
 .materials-table-note {
   margin: 0;
   padding: 12px 20px 0;
@@ -1324,9 +1420,14 @@ input[type="password"] {
     padding: 12px 0;
   }
 
-  .header-search {
+  .header-main {
     order: 3;
     flex: 1 1 100%;
+  }
+
+  .header-upload {
+    order: 2;
+    margin-inline-start: auto;
   }
 
   .kpi-row,

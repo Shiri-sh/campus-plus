@@ -1,0 +1,13 @@
+<nav class="pagination" aria-label="דפדוף תוצאות">
+  {% if page > 1 %}
+    <a class="btn btn-ghost btn-compact" href="{{ student_url(page=page - 1) }}#results">הקודם</a>
+  {% else %}
+    <span class="btn btn-ghost btn-compact is-disabled" aria-hidden="true">הקודם</span>
+  {% endif %}
+  <span class="pagination__status">עמוד {{ page }} מתוך {{ total_pages }}</span>
+  {% if page < total_pages %}
+    <a class="btn btn-ghost btn-compact" href="{{ student_url(page=page + 1) }}#results">הבא</a>
+  {% else %}
+    <span class="btn btn-ghost btn-compact is-disabled" aria-hidden="true">הבא</span>
+  {% endif %}
+</nav>

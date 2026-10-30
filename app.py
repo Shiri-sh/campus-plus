@@ -28,6 +28,7 @@ from catalog import (
     approved_years_for_course,
     course_id_for_name,
     explorer_options,
+    paginate_sequence,
     suggestion_items,
 )
 from types import SimpleNamespace
@@ -215,8 +216,13 @@ def dashboard_query(**updates):
         "course": request.args.get("course", ""),
         "year": request.args.get("year", ""),
         "type": request.args.get("type", ""),
+        "page": request.args.get("page", ""),
     }
-    args.update(updates)
+    for key, value in updates.items():
+        if value is None:
+            args.pop(key, None)
+        else:
+            args[key] = value
     return {key: value for key, value in args.items() if value not in (None, "")}
 
 
@@ -230,6 +236,7 @@ def inject_dashboard_url():
         "file_types": FILE_TYPES,
         "search_query": request.args.get("q", ""),
         "hebrew_year": hebrew_year,
+        "relevance_label": relevance_label,
     }
 
 
@@ -258,6 +265,8 @@ def student_dashboard():
         file_type=file_type,
         query=query,
     )
+    page_param = request.args.get("page", 1)
+    materials, material_total, total_pages, page = paginate_sequence(materials, page_param)
     options = explorer_options()
     selected_course = None
     if course_id:
@@ -280,6 +289,9 @@ def student_dashboard():
         selected_type=material_type,
         selected_file_type=file_type or inferred_file_type,
         search_query=query,
+        material_total=material_total,
+        total_pages=total_pages,
+        page=page,
     )
 
 

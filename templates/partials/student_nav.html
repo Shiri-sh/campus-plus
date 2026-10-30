@@ -5,32 +5,32 @@
       <span class="brand-name">Campus<span>+</span></span>
     </a>
 
-    <form class="header-search" action="{{ url_for('student_dashboard') }}" method="get">
-      <label class="sr-only" for="smart-search">חיפוש חכם</label>
-      <div class="search-input-wrap">
-        <input
-          id="smart-search"
-          name="q"
-          type="search"
-          value="{{ search_query or '' }}"
-          placeholder="חיפוש בשפה חופשית, למשל: מבחן אינפי תשפ״ד"
-          data-typeahead
-          autocomplete="off"
-        />
-        <button class="btn btn-primary" type="submit">חיפוש</button>
-      </div>
-      <div class="typeahead" data-suggest-list></div>
-      <div class="filters">
-        {% for value, label in file_types %}
-          <a
-            class="chip {% if selected_file_type == value %}is-active{% endif %}"
-            href="{% if selected_file_type == value %}{{ url_for('student_dashboard', q=search_query) }}{% else %}{{ url_for('student_dashboard', q=search_query, file_type=value) }}{% endif %}"
-          >{{ label }}</a>
+    <div class="header-main">
+      <form class="header-search" action="{{ url_for('student_dashboard') }}" method="get">
+        <label class="sr-only" for="smart-search">חיפוש חכם</label>
+        <div class="search-input-wrap">
+          <input
+            id="smart-search"
+            name="q"
+            type="search"
+            value="{{ search_query or '' }}"
+            placeholder="חיפוש בשפה חופשית, למשל: מבחן אינפי תשפ״ד"
+            data-typeahead
+            autocomplete="off"
+          />
+          <button class="btn btn-primary" type="submit">חיפוש</button>
+        </div>
+        {% for name in ["course", "year", "type", "file_type"] %}
+          {% set value = request.args.get(name) %}
+          {% if value %}
+            <input type="hidden" name="{{ name }}" value="{{ value }}" />
+          {% endif %}
         {% endfor %}
-      </div>
-    </form>
+        <div class="typeahead" data-suggest-list></div>
+      </form>
+    </div>
 
-    <a class="btn btn-cta" href="{{ url_for('upload') }}">העלאת חומר חדש</a>
+    <a class="btn btn-cta header-upload" href="{{ url_for('upload') }}">העלאת חומר חדש</a>
 
     <div class="profile-chip">
       <div class="avatar">{{ current_user.initials }}</div>
