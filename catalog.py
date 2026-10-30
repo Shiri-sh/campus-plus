@@ -21,6 +21,7 @@ from models import (
 )
 
 ADMIN_MATERIAL_PAGE_SIZE = 80
+STUDENT_MATERIAL_PAGE_SIZE = 50
 ADMIN_STATUS_FILTERS = (STATUS_APPROVED, STATUS_REJECTED)
 
 FILE_TYPE_ALIASES = {
@@ -213,6 +214,21 @@ def approved_materials(course_id=None, year=None, material_type=None, file_type=
         },
     )
     return materials, selected_year, selected_file_type
+
+
+def paginate_sequence(items, page=1, page_size=STUDENT_MATERIAL_PAGE_SIZE):
+    """Return one page from an in-memory material list."""
+    try:
+        page = max(1, int(page))
+    except (TypeError, ValueError):
+        page = 1
+    total = len(items)
+    if total == 0:
+        return [], 0, 1, 1
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    page = min(page, total_pages)
+    start = (page - 1) * page_size
+    return items[start : start + page_size], total, total_pages, page
 
 
 def search_admin_materials(

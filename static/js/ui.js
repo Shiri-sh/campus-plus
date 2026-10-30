@@ -107,6 +107,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  document.querySelectorAll("[data-student-summary]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const response = await fetch(`/student/materials/${button.dataset.studentSummary}`);
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json();
+      const modal = document.getElementById("student-summary-modal");
+      const text = modal?.querySelector("[data-student-summary-text]");
+      if (text) {
+        text.textContent = data.ai_summary || "לא נוצר סיכום.";
+      }
+      modal?.classList.add("is-open");
+    });
+  });
+
   document.querySelectorAll("[data-admin-preview]").forEach((button) => {
     button.addEventListener("click", async () => {
       const response = await fetch(`/admin/materials/${button.dataset.adminPreview}`);

@@ -13,6 +13,7 @@ from catalog import (
     courses_by_name,
     explorer_options,
     open_report_count,
+    paginate_sequence,
     parse_search_query,
     pending_materials,
     relevance_score,
@@ -160,6 +161,36 @@ def test_approved_materials_hides_pending_and_orders_newest_first(app_context):
     assert [item.file_name for item in materials] == ["new.pdf", "old.pdf"]
     assert year is None
     assert file_type is None
+
+
+def test_paginate_sequence_returns_slices_and_page_bounds():
+    items = list(range(120))
+
+    page_items, total, total_pages, page = paginate_sequence(items, page=1, page_size=50)
+
+    assert total == 120
+    assert total_pages == 3
+    assert page == 1
+    assert page_items == list(range(50))
+
+    page_items, total, total_pages, page = paginate_sequence(items, page=3, page_size=50)
+
+    assert page == 3
+    assert page_items == list(range(100, 120))
+
+    page_items, total, total_pages, page = paginate_sequence(items, page=99, page_size=50)
+
+    assert page == 3
+    assert page_items == list(range(100, 120))
+
+
+def test_paginate_sequence_empty_list():
+    page_items, total, total_pages, page = paginate_sequence([], page=2)
+
+    assert page_items == []
+    assert total == 0
+    assert total_pages == 1
+    assert page == 1
 
 
 def test_approved_materials_filters_year_zero_as_a_real_year(app_context):

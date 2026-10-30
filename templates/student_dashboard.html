@@ -67,34 +67,103 @@
     {% endif %}
   </section>
 
-  <section>
-    <h2 class="section-title">תוצאות וקבצים</h2>
-    {% if materials %}
-      <div class="file-grid">
-        {% for material in materials %}
-          <article class="file-card" data-material-id="{{ material.id }}">
-            <div class="file-top">
-              <div class="file-icon {{ material.icon_type }}">{{ material.icon_label }}</div>
-              <div>
-                <h3><bdi>{{ material.file_name }}</bdi></h3>
-                <p>{{ material.file_type_label }} · הועלה {{ material.uploaded_at.strftime("%d/%m/%Y") }}</p>
-                {% if material.relevance is not none %}
-                  <span class="score">רלוונטיות {{ material.relevance }}%</span>
-                {% endif %}
-              </div>
-            </div>
-            <div class="file-actions">
-              <button class="btn btn-primary" type="button" data-view-material="{{ material.id }}">צפייה</button>
-              {% if material.has_stored_file %}
-                <a class="btn btn-ghost" href="{{ url_for('download_material', material_id=material.id) }}">הורדה</a>
-              {% else %}
-                <button class="btn btn-ghost" type="button" disabled>הורדה</button>
-              {% endif %}
-              <button class="btn btn-ghost" type="button" data-report-material="{{ material.id }}">דיווח</button>
-            </div>
-          </article>
+  <section id="results">
+    <div class="results-toolbar">
+      <div class="results-toolbar__head">
+        <h2 class="section-title">תוצאות וקבצים</h2>
+        {% if material_total %}
+          <p class="results-summary field-hint">
+            {% if total_pages > 1 %}
+              מוצגים {{ materials|length }} מתוך {{ material_total }} קבצים · עמוד {{ page }} מתוך {{ total_pages }}
+            {% else %}
+              {{ material_total }} קבצים
+            {% endif %}
+          </p>
+        {% endif %}
+      </div>
+      <div class="filters filters--results" aria-label="סינון לפי סוג קובץ">
+        {% for value, label in file_types %}
+          <a
+            class="chip {% if selected_file_type == value %}is-active{% endif %}"
+            {% if selected_file_type == value %}aria-current="true"{% endif %}
+            href="{% if selected_file_type == value %}{{ student_url(file_type=None, page=None) }}{% else %}{{ student_url(file_type=value, page=None) }}{% endif %}#results"
+          >{{ label }}</a>
         {% endfor %}
       </div>
+    </div>
+    {% if total_pages > 1 %}
+      {% include "partials/student_pagination.html" %}
+    {% endif %}
+    {% if materials %}
+      <div class="materials-table-section student-materials-table">
+        <div class="materials-table-wrap">
+          <table class="materials-table">
+            <thead>
+              <tr>
+                <th scope="col">שם קובץ</th>
+                <th scope="col">קורס</th>
+                <th scope="col">שנה</th>
+                <th scope="col">סוג</th>
+                <th scope="col">מרצה</th>
+                <th scope="col">רלוונטיות</th>
+                <th scope="col">ביטחון</th>
+                {% if search_query %}
+                  <th scope="col">התאמת חיפוש</th>
+                {% endif %}
+                <th scope="col">סיכום</th>
+                <th scope="col">פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for material in materials %}
+                <tr data-material-id="{{ material.id }}">
+                  <td class="materials-table__name">
+                    <span class="materials-table__filename"><bdi>{{ material.file_name }}</bdi></span>
+                    <span class="materials-table__meta">{{ material.file_type_label }} · {{ material.uploaded_at.strftime("%d/%m/%Y") }}</span>
+                  </td>
+                  <td class="materials-table__course">{{ material.course.name }}</td>
+                  <td>{{ hebrew_year(material.academic_year) }}</td>
+                  <td>{{ material.material_type_label }}</td>
+                  <td>{{ material.lecturer or "—" }}</td>
+                  <td>{{ relevance_label(material.confidence, material.ai_recommendation) }}</td>
+                  <td>{% if material.confidence is not none %}{{ material.confidence }}%{% else %}—{% endif %}</td>
+                  {% if search_query %}
+                    <td>{% if material.relevance is not none %}{{ material.relevance }}%{% else %}—{% endif %}</td>
+                  {% endif %}
+                  <td>
+                    <button
+                      class="icon-btn"
+                      type="button"
+                      data-student-summary="{{ material.id }}"
+                      title="הצגת סיכום שמור"
+                      aria-label="הצגת סיכום AI שנשמר עם הקובץ"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <button class="btn btn-primary btn-compact" type="button" data-view-material="{{ material.id }}">צפייה</button>
+                      {% if material.has_stored_file %}
+                        <a class="btn btn-ghost btn-compact" href="{{ url_for('download_material', material_id=material.id) }}">הורדה</a>
+                      {% else %}
+                        <button class="btn btn-ghost btn-compact" type="button" disabled>הורדה</button>
+                      {% endif %}
+                      <button class="btn btn-ghost btn-compact" type="button" data-report-material="{{ material.id }}">דיווח</button>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% if total_pages > 1 %}
+        {% include "partials/student_pagination.html" %}
+      {% endif %}
     {% else %}
       <div class="empty-state">
         <p>אין קבצים מאושרים בתיקייה זו. קורסים שיש בהם קבצים:</p>
@@ -143,6 +212,19 @@
     <div class="modal-actions">
       <a class="btn btn-primary hidden" data-modal-download href="#">הורדה</a>
       <button class="btn btn-ghost" type="button" data-report-from-details>דיווח על תוכן / הצעת עדכון</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="student-summary-modal">
+  <div class="modal-card narrow">
+    <div class="modal-head">
+      <h2>סיכום AI</h2>
+      <button class="btn btn-ghost" type="button" data-close-modal>סגירה</button>
+    </div>
+    <p class="field-hint">הסיכום נשמר עם הקובץ בעת ההעלאה ואינו נשלח מחדש ל-AI.</p>
+    <div class="ai-summary">
+      <p data-student-summary-text dir="auto">עדיין לא נוצר.</p>
     </div>
   </div>
 </div>
