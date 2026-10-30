@@ -29,6 +29,7 @@ from catalog import (
     course_id_for_name,
     explorer_options,
     paginate_sequence,
+    student_reports,
     suggestion_items,
 )
 from types import SimpleNamespace
@@ -412,7 +413,16 @@ def report_material(material_id):
         pass
     # #endregion
     flash("הדיווח נשלח למנהל/ת.", "success")
-    return redirect(url_for("student_dashboard"))
+    return redirect(url_for("student_report_inbox"))
+
+
+@app.route("/student/reports")
+@role_required(STUDENT)
+def student_report_inbox():
+    return render_template(
+        "student_reports.html",
+        reports=student_reports(current_user.id),
+    )
 
 
 def stored_upload_name(filename):

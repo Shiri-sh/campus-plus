@@ -300,6 +300,7 @@ button {
   align-items: center;
 }
 
+.header-reports,
 .header-upload {
   flex-shrink: 0;
   white-space: nowrap;
@@ -649,6 +650,31 @@ a.chip {
   color: #4338ca;
 }
 
+.student-reports {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-reports__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.student-reports__reply {
+  margin: 0;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+.file-card h2,
 .file-card h3 {
   margin: 0 0 4px;
   font-size: 1rem;
@@ -1425,8 +1451,12 @@ input[type="password"] {
     flex: 1 1 100%;
   }
 
+  .header-reports,
   .header-upload {
     order: 2;
+  }
+
+  .header-upload {
     margin-inline-start: auto;
   }
 

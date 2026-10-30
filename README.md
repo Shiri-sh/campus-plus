@@ -10,6 +10,7 @@ An intelligent academic materials platform for JCT students — upload, discover
 - **Hybrid search** — `catalog.approved_materials` and `/student/suggest` run SQL keyword matching and Chroma semantic hits together, then merge by material id. Course, year, and type filters apply to both sides. If Chroma or Gemini is unavailable, keyword results still return.
 - **AI content agent** — on upload, Campus+ extracts file text, classifies course/year/type from the catalog, then calls Gemini (summary) and Tavily (relevance). The same analysis can run later in `agent/worker.py` for pending rows that still have no `ai_summary`. Admins still approve or reject.
 - **Upload with live classification** — students see course/year/type (editable) plus read-only relevance, confidence, and summary before the file is sent to an admin. Approved catalog items show the stored summary (or «אין סיכום AI זמין») and confidence in the details modal.
+- **Report inbox** — students open `/student/reports` to see status and admin replies for their own reports.
 - **Admin dashboard** — KPI cards, pending approval queue with stored relevance/confidence and a summary eye icon, content reports, and user management
 - **MCP tool integration** — Tavily web search (`python -m mcp_tools.tavily_search.server`) and Gmail notifications (`python -m mcp_tools.gmail_alert.server`) built as MCP Studio tools. Gmail alerts fire after a pending upload, after a student content report, and to the uploader when an admin approves or rejects.
 
