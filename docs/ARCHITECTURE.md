@@ -73,6 +73,7 @@ Drive seed data is **not** live integration: `scripts/list_drive.py` → `instan
 1. `admin_views` → `commands.materials.approve_material` (or reject/delete/update variants).
 2. Row updated; on approve, embedding upsert via `agent.embeddings.upsert_material`.
 3. Matching `record_event` for the action.
+4. Gmail notifies the uploader that the file was approved or rejected (stub if no credentials). Mail failure does not roll back the decision.
 
 ### AI worker (background)
 

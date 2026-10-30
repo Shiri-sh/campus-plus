@@ -14,11 +14,10 @@ from events import (
     MATERIAL_UPLOADED,
     record_event,
 )
+from commands.notify import send_admin_mail, send_mail
 from extensions import db
-from mcp_tools.gmail_alert import call_tool
 from models import (
     ACADEMIC_YEARS,
-    ADMIN,
     MATERIAL_TYPES,
     STATUS_APPROVED,
     STATUS_PENDING,
@@ -26,7 +25,6 @@ from models import (
     Course,
     Material,
     Report,
-    User,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,18 +43,37 @@ def notify_admins_of_pending_upload(material, admin_approvals_url):
         f"קובץ: {material.file_name}\n\n"
         f"לאישור:\n{admin_approvals_url}\n"
     )
-    results = []
-    admins = User.query.filter_by(role=ADMIN, is_blocked=False).all()
-    if not admins:
-        logger.info("gmail_alert: no administrators to notify for material %s", material.id)
-        return results
-    for admin in admins:
-        try:
-            results.append(call_tool(admin.email, subject, body))
-        except Exception as error:
-            logger.warning("gmail_alert unexpected error for %s: %s", admin.email, error)
-            results.append({"ok": False, "confirmation": str(error), "mode": "error"})
-    return results
+    return send_admin_mail(subject, body, context=f"for material {material.id}")
+
+
+def notify_uploader_of_decision(material, student_url=None):
+    uploader = material.uploader
+    if uploader is None or not (uploader.email or "").strip():
+        logger.info("gmail_alert: no uploader to notify for material %s", material.id)
+        return None
+    course_name = material.course.name if material.course else "—"
+    if material.status == STATUS_APPROVED:
+        subject = f"Campus+: החומר אושר — {material.file_name}"
+        outcome = "אושר ויופיע בקטלוג הסטודנטים."
+    elif material.status == STATUS_REJECTED:
+        subject = f"Campus+: החומר נדחה — {material.file_name}"
+        outcome = "נדחה ולא יופיע בקטלוג."
+    else:
+        return None
+    body = (
+        f"החומר שהעלית {outcome}\n\n"
+        f"קובץ: {material.file_name}\n"
+        f"קורס: {course_name}\n"
+        f"שנה: {material.academic_year}\n"
+    )
+    if student_url and material.status == STATUS_APPROVED:
+        body += f"\nלקטלוג:\n{student_url}\n"
+    return send_mail(
+        uploader.email,
+        subject,
+        body,
+        context=f"for uploader of material {material.id}",
+    )
 
 
 def confirm_pending_upload(
@@ -161,7 +178,14 @@ def _record_material_event(event_type, material, actor_id):
     )
 
 
-def approve_material(material_id, actor_id):
+def _notify_uploader_after_decision(material, student_url):
+    try:
+        notify_uploader_of_decision(material, student_url)
+    except Exception as error:
+        logger.warning("gmail_alert skipped after decision %s: %s", material.id, error)
+
+
+def approve_material(material_id, actor_id, student_url=None):
     material = _require_material(material_id)
     material.status = STATUS_APPROVED
     db.session.commit()
@@ -170,14 +194,16 @@ def approve_material(material_id, actor_id):
         upsert_material(material.id, material_document(material))
     except Exception as error:
         logger.warning("chroma upsert skipped after approve %s: %s", material.id, error)
+    _notify_uploader_after_decision(material, student_url)
     return material
 
 
-def reject_material(material_id, actor_id):
+def reject_material(material_id, actor_id, student_url=None):
     material = _require_material(material_id)
     material.status = STATUS_REJECTED
     db.session.commit()
     _record_material_event(MATERIAL_REJECTED, material, actor_id)
+    _notify_uploader_after_decision(material, student_url)
     return material
 
 

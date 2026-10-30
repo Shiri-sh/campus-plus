@@ -189,7 +189,11 @@ def register_admin_routes(app, role_required, material_payload):
     @role_required(ADMIN)
     def approve_material(material_id):
         material = admin_material(material_id)
-        approve_material_record(material.id, current_user.id)
+        approve_material_record(
+            material.id,
+            current_user.id,
+            student_url=url_for("student_dashboard", _external=True),
+        )
         flash(f"אושר: {material.file_name}.", "success")
         return admin_redirect("approvals")
 
@@ -197,7 +201,11 @@ def register_admin_routes(app, role_required, material_payload):
     @role_required(ADMIN)
     def reject_material(material_id):
         material = admin_material(material_id)
-        reject_material_record(material.id, current_user.id)
+        reject_material_record(
+            material.id,
+            current_user.id,
+            student_url=url_for("student_dashboard", _external=True),
+        )
         flash(f"נדחה: {material.file_name}.", "success")
         return admin_redirect("approvals")
 

@@ -176,8 +176,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (reportForm) {
       reportForm.action = `/student/materials/${materialId}/report`;
     }
+    // #region agent log
+    fetch('http://127.0.0.1:7541/ingest/74819082-9d00-44d0-859a-8a287370b060',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a47a02'},body:JSON.stringify({sessionId:'a47a02',hypothesisId:'C',location:'ui.js:openReport',message:'open report modal',data:{materialId,hasForm:Boolean(reportForm),action:reportForm?.action||''},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     reportModal?.classList.add("is-open");
   };
+
+  reportForm?.addEventListener("submit", () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7541/ingest/74819082-9d00-44d0-859a-8a287370b060',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a47a02'},body:JSON.stringify({sessionId:'a47a02',hypothesisId:'C',location:'ui.js:reportForm.submit',message:'submit report form',data:{action:reportForm.action||'',materialId:activeMaterialId},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+  });
 
   document.querySelectorAll("[data-view-material]").forEach((button) => {
     button.addEventListener("click", async () => {

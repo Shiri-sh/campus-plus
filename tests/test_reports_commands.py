@@ -44,7 +44,7 @@ def test_create_report_emails_unblocked_admins(app_context, monkeypatch):
     db.session.commit()
     sent = []
     monkeypatch.setattr(
-        "commands.reports.call_tool",
+        "commands.notify.call_tool",
         lambda recipient, subject, body: sent.append((recipient, subject, body)) or {"ok": True},
     )
 
@@ -66,7 +66,7 @@ def test_create_report_keeps_the_row_when_gmail_fails(app_context, monkeypatch):
     def boom(recipient, subject, body):
         raise RuntimeError("smtp down")
 
-    monkeypatch.setattr("commands.reports.call_tool", boom)
+    monkeypatch.setattr("commands.notify.call_tool", boom)
 
     report = create_report(material.id, student.id, "הקובץ לא נפתח")
 

@@ -1,0 +1,4 @@
+{"sessionId": "a47a02", "hypothesisId": "E", "location": "commands/notify.py:send_mail", "message": "send_mail", "data": {"context": "for material 2788", "ok": true, "mode": "smtp"}, "timestamp": 1793326474655}
+{"sessionId": "a47a02", "hypothesisId": "E", "location": "commands/notify.py:send_mail", "message": "send_mail", "data": {"context": "for material 2788", "ok": true, "mode": "smtp"}, "timestamp": 1793326479614}
+{"sessionId": "a47a02", "hypothesisId": "D", "location": "commands/notify.py:send_admin_mail", "message": "send_admin_mail", "data": {"context": "for material 2788", "admin_count": 2, "ok_flags": [true, true], "modes": ["smtp", "smtp"]}, "timestamp": 1793326479615}
+{"sessionId": "a47a02", "hypothesisId": "E", "location": "commands/notify.py:send_mail", "message": "send_mail", "data": {"context": "for uploader of material 2785", "ok": true, "mode": "smtp"}, "timestamp": 1793326514647}

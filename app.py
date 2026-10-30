@@ -403,6 +403,14 @@ def report_material(material_id):
         message,
         admin_reports_url=url_for("admin", tab="reports", _external=True),
     )
+    # #region agent log
+    try:
+        import json as _json, time as _time
+        with open("/Users/tdinavet/Desktop/AI project/campus-plus/.cursor/debug-a47a02.log", "a") as _f:
+            _f.write(_json.dumps({"sessionId":"a47a02","hypothesisId":"C","location":"app.py:report_material","message":"student report saved","data":{"material_id":material.id},"timestamp":int(_time.time()*1000)})+"\n")
+    except Exception:
+        pass
+    # #endregion
     flash("הדיווח נשלח למנהל/ת.", "success")
     return redirect(url_for("student_dashboard"))
 

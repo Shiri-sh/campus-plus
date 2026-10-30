@@ -139,7 +139,7 @@ def test_remove_stored_upload_refuses_a_symlink_outside_the_folder(tmp_path):
 def test_notify_returns_empty_when_there_are_no_admins(app_context, monkeypatch):
     calls = []
     monkeypatch.setattr(
-        "commands.materials.call_tool",
+        "commands.notify.call_tool",
         lambda recipient, subject, body: calls.append(recipient),
     )
     course = add_course()
@@ -158,7 +158,7 @@ def test_notify_sends_only_to_active_admins(app_context, monkeypatch):
         seen.append(recipient)
         return {"ok": True, "confirmation": "stub", "mode": "stub"}
 
-    monkeypatch.setattr("commands.materials.call_tool", record)
+    monkeypatch.setattr("commands.notify.call_tool", record)
     add_user("admin@jct.ac.il", ADMIN)
     add_user("blocked@jct.ac.il", ADMIN, is_blocked=True)
     add_user("student@jct.ac.il", STUDENT)
@@ -175,7 +175,7 @@ def test_notify_records_an_unexpected_send_error(app_context, monkeypatch):
     def explode(recipient, subject, body):
         raise RuntimeError("smtp down")
 
-    monkeypatch.setattr("commands.materials.call_tool", explode)
+    monkeypatch.setattr("commands.notify.call_tool", explode)
     add_user("admin@jct.ac.il", ADMIN)
     course = add_course()
     material = add_material(course)
@@ -386,6 +386,71 @@ def test_delete_material_leaves_a_remote_file_alone(app_context, tmp_path):
     assert db.session.get(Material, material_id) is None
     assert kept.read_text() == "keep"
     assert Event.query.filter_by(event_type=MATERIAL_DELETED).count() == 1
+
+
+@pytest.mark.parametrize(
+    ("command", "status", "subject_part", "body_part", "catalog_link_expected"),
+    [
+        (approve_material, STATUS_APPROVED, "אושר", "יופיע בקטלוג", True),
+        (reject_material, STATUS_REJECTED, "נדחה", "לא יופיע בקטלוג", False),
+    ],
+)
+def test_decision_emails_the_uploader(
+    app_context, monkeypatch, command, status, subject_part, body_part, catalog_link_expected
+):
+    sent = []
+    monkeypatch.setattr(
+        "commands.notify.call_tool",
+        lambda recipient, subject, body: sent.append((recipient, subject, body)) or {"ok": True},
+    )
+    monkeypatch.setattr("commands.materials.upsert_material", lambda material_id, text: True)
+    course = add_course()
+    student = add_user("student@jct.ac.il", STUDENT)
+    admin = add_user("admin@jct.ac.il", ADMIN)
+    material = add_material(course, uploader_id=student.id)
+
+    decided = command(material.id, admin.id, student_url="https://example.com/student")
+
+    assert decided.status == status
+    assert len(sent) == 1
+    recipient, subject, body = sent[0]
+    assert recipient == "student@jct.ac.il"
+    assert subject_part in subject
+    assert "סיכום.pdf" in subject
+    assert body_part in body
+    assert ("https://example.com/student" in body) is catalog_link_expected
+
+
+def test_approve_skips_mail_when_there_is_no_uploader(app_context, monkeypatch):
+    sent = []
+    monkeypatch.setattr(
+        "commands.notify.call_tool",
+        lambda recipient, subject, body: sent.append(recipient) or {"ok": True},
+    )
+    monkeypatch.setattr("commands.materials.upsert_material", lambda material_id, text: True)
+    course = add_course()
+    admin = add_user("admin@jct.ac.il", ADMIN)
+    material = add_material(course)
+
+    approve_material(material.id, admin.id)
+
+    assert sent == []
+
+
+def test_approve_keeps_the_row_when_gmail_fails(app_context, monkeypatch):
+    def boom(recipient, subject, body):
+        raise RuntimeError("smtp down")
+
+    monkeypatch.setattr("commands.notify.call_tool", boom)
+    monkeypatch.setattr("commands.materials.upsert_material", lambda material_id, text: True)
+    course = add_course()
+    student = add_user("student@jct.ac.il", STUDENT)
+    admin = add_user("admin@jct.ac.il", ADMIN)
+    material = add_material(course, uploader_id=student.id)
+
+    approved = approve_material(material.id, admin.id)
+
+    assert approved.status == STATUS_APPROVED
 
 
 def test_approve_upserts_a_chroma_vector(app_context, monkeypatch):
