@@ -6,7 +6,7 @@ An intelligent academic materials platform for JCT students — upload, discover
 
 ## What it does
 
-- **Smart catalog** — browse, search, and preview thousands of academic materials organized by course, year, and type. Imported files with no detectable year keep `academic_year = 0` and show as לא ידוע in the student explorer and admin year menu.
+- **Smart catalog** — browse, search, and preview thousands of academic materials organized by course, year, and type. Imported files with no detectable year keep `academic_year = 0` and show as לא ידוע in the student explorer and admin year menu. The student results table does not repeat AI relevance and confidence as columns; those stay in the summary and details views.
 - **Hybrid search** — `catalog.approved_materials` and `/student/suggest` run SQL keyword matching and Chroma semantic hits together, then merge by material id. Course, year, and type filters apply to both sides. If Chroma or Gemini is unavailable, keyword results still return.
 - **AI content agent** — on upload, Campus+ extracts file text, classifies course/year/type from the catalog, then calls Gemini (summary) and Tavily (relevance). The same analysis can run later in `agent/worker.py` for pending rows that still have no `ai_summary`. Admins still approve or reject.
 - **Upload with live classification** — students see course/year/type (editable) plus read-only relevance, confidence, and summary before the file is sent to an admin. Approved catalog items show the stored summary (or «אין סיכום AI זמין») and confidence in the details modal.
